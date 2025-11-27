@@ -20,6 +20,7 @@
             font-family: 'Microsoft YaHei', sans-serif;
             -webkit-tap-highlight-color: transparent;
             overscroll-behavior: none;
+            user-select: none; /* 全局禁止选中文本，防止拖拽干扰 */
         }
 
         /* --- 卡片基础样式 --- */
@@ -48,10 +49,12 @@
             position: fixed; inset: 0; z-index: 100;
             background-color: #1a1a1a;
             display: none; flex-direction: column;
+            touch-action: none;
         }
         
         #step1-crop, #step2-annotate {
             flex: 1; display: none; flex-direction: column; overflow: hidden;
+            height: 100%;
         }
 
         /* 标注画布容器 */
@@ -59,34 +62,38 @@
             flex: 1;
             position: relative;
             background-color: #333;
-            overflow: auto; 
+            overflow: hidden; /* 隐藏原生滚动条，使用 transform 平移 */
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 20px; 
+            /* 网格背景 */
             background-image: linear-gradient(45deg, #444 25%, transparent 25%), linear-gradient(-45deg, #444 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #444 75%), linear-gradient(-45deg, transparent 75%, #444 75%);
             background-size: 20px 20px;
+            cursor: grab; /* 默认手型，提示可拖动 */
         }
+        #annotationContainer:active { cursor: grabbing; }
 
-        /* 实际操作台 */
+        /* 实际操作台 (图片+贴纸) */
         #workStage {
-            position: relative;
+            position: absolute;
             box-shadow: 0 0 20px rgba(0,0,0,0.5);
-            display: inline-block; 
-            line-height: 0; 
             transform-origin: center center;
-            margin: auto;
+            left: 50%; top: 50%;
+            transform: translate(-50%, -50%);
+            /* 这里的 cursor 恢复默认，避免误解 */
+            cursor: default;
         }
 
         #stageBg {
             display: block;
             pointer-events: none;
-            max-width: 100%;
-            max-height: 60vh; 
+            max-width: none;
+            max-height: 60vh; /* 限制高度，防止遮挡工具栏 */
+            max-width: 90vw;
             object-fit: contain;
         }
 
-        /* --- 交互元素 --- */
+        /* --- 交互元素 (通用) --- */
         .interactive-item {
             position: absolute;
             z-index: 10;
@@ -103,55 +110,61 @@
         .interactive-item.selected {
             border-color: rgba(255, 255, 255, 0.9);
             background-color: rgba(255, 255, 255, 0.1);
-            z-index: 100;
+            z-index: 100; /* 选中时层级最高 */
         }
+        /* 框图类型的容器，选中时不显示外虚线框，只依靠自身的边框 */
         .interactive-item.box-type.selected {
             border-color: transparent;
             background-color: transparent;
         }
 
+        /* 临时绘图元素 */
         .temp-drawing-shape {
             position: absolute;
-            z-index: 20;
+            z-index: 60;
             pointer-events: none; 
         }
 
         /* --- 把手 --- */
         .handle {
             position: absolute;
-            width: 24px; height: 24px;
+            width: 28px; height: 28px;
             background: white; border-radius: 50%;
             display: none; 
             align-items: center; justify-content: center;
             font-size: 14px; box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-            z-index: 110; cursor: pointer; line-height: 24px;
+            /* 关键：把手层级必须高于绘图层(50)，确保在绘图模式下也能点击把手退出绘图 */
+            z-index: 110; 
+            cursor: pointer; line-height: 24px;
         }
         
         .interactive-item.selected .handle { display: flex; }
 
-        .handle-del { top: -12px; left: -12px; color: #ef4444; border: 2px solid #ef4444; }
-        .handle-copy { top: -12px; right: -12px; color: #3b82f6; border: 2px solid #3b82f6; }
-        .handle-resize { bottom: -12px; right: -12px; color: #22c55e; border: 2px solid #22c55e; cursor: nwse-resize; }
-        .handle-rotate { top: -35px; left: 50%; margin-left: -12px; color: #f59e0b; border: 2px solid #f59e0b; cursor: grab; }
-        .handle-move { bottom: -12px; left: -12px; color: #a855f7; border: 2px solid #a855f7; cursor: move; }
+        /* 5个控制角 */
+        .handle-del { top: -14px; left: -14px; color: #ef4444; border: 2px solid #ef4444; }
+        .handle-copy { top: -14px; right: -14px; color: #3b82f6; border: 2px solid #3b82f6; }
+        .handle-resize { bottom: -14px; right: -14px; color: #22c55e; border: 2px solid #22c55e; cursor: nwse-resize; }
+        .handle-move { bottom: -14px; left: -14px; color: #a855f7; border: 2px solid #a855f7; cursor: move; }
+        .handle-rotate { top: -35px; left: 50%; margin-left: -14px; color: #f59e0b; border: 2px solid #f59e0b; cursor: grab; }
 
-        /* 内容 */
+        /* 内容容器 */
         .item-content {
             width: 100%; height: 100%;
-            pointer-events: none; 
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            pointer-events: none; /* 内容本身不响应鼠标，由父级响应拖拽 */
+            display: flex; align-items: center; justify-content: center;
         }
+        /* 文本特殊处理：允许点击聚焦 */
         .interactive-item[data-type="text"] .item-content {
             pointer-events: auto; width: auto; height: auto; min-width: 50px;
         }
 
-        /* --- 样式 --- */
+        /* --- 具体元素样式 --- */
         .custom-input-text {
             font-family: 'Microsoft YaHei', sans-serif;
             font-weight: bold; font-size: 32px; white-space: nowrap;
-            -webkit-text-stroke: 6px white; paint-order: stroke fill;
+            /* 描边大幅加粗 */
+            -webkit-text-stroke: 6px white; 
+            paint-order: stroke fill;
             text-shadow: 0 2px 6px rgba(0,0,0,0.4);
             outline: none; padding: 4px; cursor: text; line-height: 1.2;
         }
@@ -168,13 +181,15 @@
             width: 100%; height: 100%;
             background-size: 100% 100%; background-repeat: no-repeat;
         }
-
+        
         .shape-line {
             width: 100%; height: 100%;
-            border-bottom: 6px solid;
-            box-sizing: border-box; margin-top: -3px;
+            border-bottom: 6px solid; 
+            /* 线条垂直居中 */
+            display: flex; align-items: center;
         }
 
+        /* 绘图覆盖层 */
         #drawOverlay {
             position: absolute; inset: 0; z-index: 50; cursor: crosshair; display: none;
         }
@@ -213,7 +228,7 @@
     <!-- 顶部提示 -->
     <div class="mb-4 text-center text-gray-600 max-w-lg">
         <h1 class="text-2xl font-bold mb-1 text-gray-800">教育卡片生成器</h1>
-        <p class="text-xs text-gray-500">点击图片进入编辑 | 任意剪裁 + 涂鸦合成</p>
+        <p class="text-xs text-gray-500">点击图片进入编辑 | 电脑：滚轮缩放/拖拽移动 | 手机：双指缩放/单指移动</p>
     </div>
 
     <!-- 卡片主体 -->
@@ -316,7 +331,12 @@
             <div class="bg-gray-900 p-2 text-white z-20 flex flex-col gap-2 shadow-lg" onclick="event.stopPropagation()">
                 <div class="flex justify-between items-center border-b border-gray-700 pb-2 px-2">
                     <span class="font-bold text-lg">步骤2: 涂鸦与标注</span>
-                    <button onclick="finishAnnotation()" class="bg-green-600 px-6 py-1.5 rounded-full text-sm font-bold">完成并插入</button>
+                    <div class="flex gap-2">
+                        <button onclick="resetZoom()" class="bg-gray-600 px-3 py-1 rounded text-xs">↺ 复位</button>
+                        <button onclick="changeZoom(0.1)" class="bg-gray-600 px-3 py-1 rounded text-xs">🔍+</button>
+                        <button onclick="changeZoom(-0.1)" class="bg-gray-600 px-3 py-1 rounded text-xs">🔍-</button>
+                        <button onclick="finishAnnotation()" class="bg-green-600 px-4 py-1.5 rounded-full text-sm font-bold">完成</button>
+                    </div>
                 </div>
                 
                 <!-- 贴纸栏 -->
@@ -335,25 +355,24 @@
                 <!-- 颜色选择 -->
                 <div class="flex items-center gap-3 px-2 py-1 overflow-x-auto no-scrollbar border-b border-gray-700 pb-2">
                     <span class="text-xs text-gray-400">颜色:</span>
-                    <div class="color-dot active" style="background: #ef4444;" onclick="setColor('#ef4444', this)"></div> <!-- 红 -->
-                    <div class="color-dot" style="background: #f97316;" onclick="setColor('#f97316', this)"></div> <!-- 橙 -->
-                    <div class="color-dot" style="background: #eab308;" onclick="setColor('#eab308', this)"></div> <!-- 黄 -->
-                    <div class="color-dot" style="background: #22c55e;" onclick="setColor('#22c55e', this)"></div> <!-- 绿 -->
-                    <div class="color-dot" style="background: #3b82f6;" onclick="setColor('#3b82f6', this)"></div> <!-- 蓝 -->
-                    <div class="color-dot" style="background: #a855f7;" onclick="setColor('#a855f7', this)"></div> <!-- 紫 -->
-                    <div class="color-dot" style="background: #4C1D95;" onclick="setColor('#4C1D95', this)"></div> <!-- 深紫 -->
-                    <div class="color-dot" style="background: #000000;" onclick="setColor('#000000', this)"></div> <!-- 黑 -->
-                    <div class="color-dot" style="background: #ffffff;" onclick="setColor('#ffffff', this)"></div> <!-- 白 -->
-                    <div class="color-dot" style="background: #D1D5DB;" onclick="setColor('#D1D5DB', this)"></div> <!-- 浅灰 -->
+                    <div class="color-dot active" style="background: #ef4444;" onclick="setColor('#ef4444', this)"></div>
+                    <div class="color-dot" style="background: #f97316;" onclick="setColor('#f97316', this)"></div>
+                    <div class="color-dot" style="background: #eab308;" onclick="setColor('#eab308', this)"></div>
+                    <div class="color-dot" style="background: #22c55e;" onclick="setColor('#22c55e', this)"></div>
+                    <div class="color-dot" style="background: #3b82f6;" onclick="setColor('#3b82f6', this)"></div>
+                    <div class="color-dot" style="background: #a855f7;" onclick="setColor('#a855f7', this)"></div>
+                    <div class="color-dot" style="background: #4C1D95;" onclick="setColor('#4C1D95', this)"></div>
+                    <div class="color-dot" style="background: #000000;" onclick="setColor('#000000', this)"></div>
+                    <div class="color-dot" style="background: #ffffff;" onclick="setColor('#ffffff', this)"></div>
+                    <div class="color-dot" style="background: #D1D5DB;" onclick="setColor('#D1D5DB', this)"></div>
                 </div>
 
-                <!-- 工具栏 -->
+                <!-- 工具栏 (全功能) -->
                 <div class="flex gap-2 px-2 overflow-x-auto pb-1">
                     <button id="btnText" onclick="addTextSticker()" class="flex-1 border border-gray-600 rounded py-1.5 px-3 text-xs text-gray-300 whitespace-nowrap">T 文本</button>
                     <button id="btnRect" onclick="setDrawingMode('rect', this)" class="flex-1 border border-gray-600 rounded py-1.5 px-3 text-xs text-gray-300 whitespace-nowrap">□ 空心</button>
                     <button id="btnFill" onclick="setDrawingMode('fillRect', this)" class="flex-1 border border-gray-600 rounded py-1.5 px-3 text-xs text-gray-300 whitespace-nowrap">■ 色块</button>
                     <button id="btnLine" onclick="setDrawingMode('line', this)" class="flex-1 border border-gray-600 rounded py-1.5 px-3 text-xs text-gray-300 whitespace-nowrap">➖ 直线</button>
-                    <!-- 移除箭头按钮 -->
                     <button id="btnExp" onclick="setDrawingMode('explosion', this)" class="flex-1 border border-gray-600 rounded py-1.5 px-3 text-xs text-gray-300 whitespace-nowrap">💥 爆炸</button>
                     <button onclick="undo()" class="flex-1 border border-gray-600 rounded py-1.5 px-3 text-xs text-gray-300 whitespace-nowrap">↩️ 撤销</button>
                     <button onclick="clearAllItems()" class="flex-1 border border-gray-600 rounded py-1.5 px-3 text-xs text-red-300 whitespace-nowrap">🗑️ 清空</button>
@@ -361,8 +380,8 @@
             </div>
 
             <!-- 涂鸦画布 -->
-            <div id="annotationContainer" onclick="deselectAllItems()">
-                <div id="workStage" onclick="event.stopPropagation()">
+            <div id="annotationContainer">
+                <div id="workStage">
                     <img id="stageBg" class="block">
                     <div id="drawOverlay"></div> <!-- 绘图层 -->
                 </div>
@@ -386,7 +405,10 @@
         let currentTargetId = '';
         let historyStack = [];
         let drawingMode = null; 
-        let drawingColor = '#ef4444'; // 默认红色
+        let drawingColor = '#ef4444'; 
+        let stageScale = 1;
+        let stageX = 0;
+        let stageY = 0;
         const quotes = ["每次付出都有意义，付出在哪里，收获就在哪里，时间会在你身上雕刻出努力的痕迹。",
 "星光不问赶路人，时光不负有心人。你现在的每一分努力，都是在为未来的幸运埋下伏笔。",
 "学习不仅仅是为了那一张试卷，而是为了让你拥有选择世界的权利，而不是被迫被世界选择。",
@@ -936,7 +958,110 @@
         window.onload = () => {
             document.getElementById('mainText').innerText = `"${quotes[Math.floor(Math.random() * quotes.length)]}"`;
             setRandomAvatar();
+            initZoom();
         };
+
+        // --- 画布缩放与平移 (增强版) ---
+        function initZoom() {
+            const container = document.getElementById('annotationContainer');
+            let startDist = 0, startScale = 1;
+            let startPanX = 0, startPanY = 0;
+            let isPanning = false;
+
+            // PC 滚轮缩放
+            container.addEventListener('wheel', (e) => {
+                e.preventDefault();
+                const delta = e.deltaY > 0 ? 0.9 : 1.1;
+                changeZoomInternal(delta);
+            });
+
+            // PC 鼠标拖拽平移
+            container.addEventListener('mousedown', (e) => {
+                // 如果点击的是交互元素或把手，不平移
+                if (e.target.closest('.interactive-item') || drawingMode) return;
+                isPanning = true;
+                startPanX = e.clientX - stageX;
+                startPanY = e.clientY - stageY;
+                container.style.cursor = 'grabbing';
+            });
+
+            window.addEventListener('mousemove', (e) => {
+                if (!isPanning) return;
+                e.preventDefault();
+                stageX = e.clientX - startPanX;
+                stageY = e.clientY - startPanY;
+                updateStageTransform();
+            });
+
+            window.addEventListener('mouseup', () => {
+                if (isPanning) {
+                    isPanning = false;
+                    container.style.cursor = 'grab';
+                }
+            });
+
+            // 移动端触摸逻辑
+            container.addEventListener('touchstart', (e) => {
+                if (e.touches.length === 2) {
+                    startDist = Math.hypot(
+                        e.touches[0].pageX - e.touches[1].pageX,
+                        e.touches[0].pageY - e.touches[1].pageY
+                    );
+                    startScale = stageScale;
+                } else if (e.touches.length === 1 && !e.target.closest('.interactive-item') && !drawingMode) {
+                    isPanning = true;
+                    startPanX = e.touches[0].pageX - stageX;
+                    startPanY = e.touches[0].pageY - stageY;
+                }
+            });
+
+            container.addEventListener('touchmove', (e) => {
+                if (e.touches.length === 2) {
+                    e.preventDefault();
+                    const dist = Math.hypot(
+                        e.touches[0].pageX - e.touches[1].pageX,
+                        e.touches[0].pageY - e.touches[1].pageY
+                    );
+                    const delta = dist / startDist;
+                    stageScale = Math.max(0.5, Math.min(5, startScale * delta));
+                    updateStageTransform();
+                } else if (isPanning && e.touches.length === 1) {
+                    e.preventDefault();
+                    stageX = e.touches[0].pageX - startPanX;
+                    stageY = e.touches[0].pageY - startPanY;
+                    updateStageTransform();
+                }
+            });
+
+            container.addEventListener('touchend', () => { isPanning = false; });
+        }
+
+        function changeZoom(delta) {
+            stageScale = Math.max(0.5, Math.min(5, stageScale + delta));
+            updateStageTransform();
+        }
+
+        function changeZoomInternal(ratio) {
+            stageScale = Math.max(0.5, Math.min(5, stageScale * ratio));
+            updateStageTransform();
+        }
+
+        function resetZoom() {
+            stageScale = 1; stageX = 0; stageY = 0;
+            updateStageTransform();
+        }
+
+        function updateStageTransform() {
+            const stage = document.getElementById('workStage');
+            stage.style.transform = `translate(calc(-50% + ${stageX}px), calc(-50% + ${stageY}px)) scale(${stageScale})`;
+        }
+
+        // --- 初始化辅助 ---
+        function changeQuote() {
+            const randomIndex = Math.floor(Math.random() * quotes.length);
+            const mainText = document.getElementById('mainText');
+            mainText.innerText = `"${quotes[randomIndex]}"`;
+        }
 
         function setRandomAvatar() {
             const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><circle cx="50" cy="50" r="45" fill="#aaddaa"/><path d="M50 20 Q30 40 50 60 Q70 40 50 20 M50 60 L50 80 M40 70 L60 70" stroke="#558855" stroke-width="4" fill="none"/></svg>';
@@ -990,8 +1115,8 @@
             
             const bg = document.getElementById('stageBg');
             bg.src = url;
+            resetZoom();
             
-            // 清理上一轮涂鸦
             const stage = document.getElementById('workStage');
             Array.from(stage.children).forEach(child => {
                 if(child.id !== 'stageBg' && child.id !== 'drawOverlay') child.remove();
@@ -1039,13 +1164,7 @@
             }
         }
 
-        function changeQuote() {
-            const randomIndex = Math.floor(Math.random() * quotes.length);
-            const mainText = document.getElementById('mainText');
-            mainText.innerText = `"${quotes[randomIndex]}"`;
-        }
-
-        // 创建交互元素工厂
+        // 创建交互元素工厂 (统一包含5个把手)
         function createItem(contentNode, type='shape') {
             deselectAllItems();
             const el = document.createElement('div');
@@ -1053,19 +1172,13 @@
             el.dataset.type = type; 
             el.style.left = '30%'; el.style.top = '30%';
 
-            // 统一添加按钮
+            // 5个把手
             const delBtn = document.createElement('div');
             delBtn.className = 'handle handle-del'; delBtn.innerText = '✕';
-            delBtn.onclick = (e) => { e.stopPropagation(); el.remove(); if(drawingMode) setDrawingMode(null, null); };
-
+            
             const copyBtn = document.createElement('div');
             copyBtn.className = 'handle handle-copy'; copyBtn.innerText = '❐';
-            copyBtn.onclick = (e) => { 
-                e.stopPropagation(); 
-                duplicateItem(el); 
-                if(drawingMode) setDrawingMode(null, null);
-            };
-
+            
             const resizeBtn = document.createElement('div');
             resizeBtn.className = 'handle handle-resize'; resizeBtn.innerText = '↘';
 
@@ -1075,6 +1188,15 @@
             const moveBtn = document.createElement('div');
             moveBtn.className = 'handle handle-move'; moveBtn.innerText = '✥';
 
+            // 绑定事件 (关键：点击手柄时退出绘图模式)
+            [delBtn, copyBtn, resizeBtn, rotateBtn, moveBtn].forEach(btn => {
+                btn.addEventListener('touchstart', (e) => { if(drawingMode) setDrawingMode(null, null); });
+                btn.addEventListener('mousedown', (e) => { if(drawingMode) setDrawingMode(null, null); });
+            });
+
+            delBtn.onclick = (e) => { e.stopPropagation(); el.remove(); };
+            copyBtn.onclick = (e) => { e.stopPropagation(); duplicateItem(el); };
+
             el.appendChild(delBtn);
             el.appendChild(copyBtn);
             el.appendChild(resizeBtn);
@@ -1082,10 +1204,8 @@
             el.appendChild(moveBtn);
             el.appendChild(contentNode);
 
-            // 绑定交互 (传入 moveBtn)
             bindInteraction(el, resizeBtn, rotateBtn, moveBtn);
 
-            // 点击选中
             el.addEventListener('click', (e) => {
                 e.stopPropagation();
                 if(drawingMode) setDrawingMode(null, null);
@@ -1105,12 +1225,18 @@
             clone.style.left = (parseFloat(original.style.left) + 20) + 'px';
             clone.style.top = (parseFloat(original.style.top) + 20) + 'px';
             
+            // 重新绑定事件
             const resizeBtn = clone.querySelector('.handle-resize');
-            const delBtn = clone.querySelector('.handle-del');
-            const copyBtn = clone.querySelector('.handle-copy');
             const rotateBtn = clone.querySelector('.handle-rotate');
             const moveBtn = clone.querySelector('.handle-move');
+            const delBtn = clone.querySelector('.handle-del');
+            const copyBtn = clone.querySelector('.handle-copy');
             
+            [delBtn, copyBtn, resizeBtn, rotateBtn, moveBtn].forEach(btn => {
+                btn.addEventListener('touchstart', () => { if(drawingMode) setDrawingMode(null, null); });
+                btn.addEventListener('mousedown', () => { if(drawingMode) setDrawingMode(null, null); });
+            });
+
             delBtn.onclick = (e) => { e.stopPropagation(); clone.remove(); };
             copyBtn.onclick = (e) => { e.stopPropagation(); duplicateItem(clone); };
             
@@ -1118,7 +1244,6 @@
             if(input) {
                 input.onclick = (e) => { e.stopPropagation(); deselectAllItems(); clone.classList.add('selected'); };
                 input.onmousedown = (e) => e.stopPropagation();
-                input.ontouchstart = (e) => e.stopPropagation();
             }
 
             bindInteraction(clone, resizeBtn, rotateBtn, moveBtn);
@@ -1165,21 +1290,17 @@
 
         // 交互逻辑 (拖拽 + 缩放 + 旋转)
         function bindInteraction(el, resizeHandle, rotateHandle, moveHandle) {
-            // 绑定拖拽到主体 和 移动抓手
-            el.addEventListener('touchstart', dragStart);
-            el.addEventListener('mousedown', dragStart);
-            if(moveHandle) {
-                moveHandle.addEventListener('touchstart', dragStart);
-                moveHandle.addEventListener('mousedown', dragStart);
-            }
-
-            function dragStart(e) {
+            // 拖拽 (元素本身 & 移动抓手)
+            const startDrag = (e) => {
                 if(e.target.isContentEditable) return;
-                // 如果点击的是其他功能按钮，不触发拖拽
+                // 如果点击的是把手（除了移动抓手），不触发拖拽
                 if(e.target.classList.contains('handle') && !e.target.classList.contains('handle-move')) return;
                 
                 e.preventDefault(); e.stopPropagation();
+                
+                // 关键：点击已有元素时，退出绘图模式
                 if(drawingMode) setDrawingMode(null, null);
+
                 deselectAllItems(); el.classList.add('selected');
 
                 const p = e.touches ? e.touches[0] : e;
@@ -1190,8 +1311,9 @@
 
                 const move = (em) => {
                     const pm = em.touches ? em.touches[0] : em;
-                    el.style.left = (pm.clientX - parentRect.left - offsetX) + 'px';
-                    el.style.top = (pm.clientY - parentRect.top - offsetY) + 'px';
+                    // 计算逻辑需考虑画布缩放 stageScale
+                    el.style.left = (pm.clientX - parentRect.left - offsetX) / stageScale + 'px';
+                    el.style.top = (pm.clientY - parentRect.top - offsetY) / stageScale + 'px';
                 };
                 const up = () => {
                     window.removeEventListener('mousemove', move);
@@ -1203,99 +1325,103 @@
                 window.addEventListener('touchmove', move, {passive: false});
                 window.addEventListener('mouseup', up);
                 window.addEventListener('touchend', up);
+            };
+
+            el.addEventListener('touchstart', startDrag);
+            el.addEventListener('mousedown', startDrag);
+            if(moveHandle) {
+                moveHandle.addEventListener('touchstart', startDrag);
+                moveHandle.addEventListener('mousedown', startDrag);
             }
 
             // 缩放
-            if (resizeHandle) {
-                resizeHandle.addEventListener('touchstart', resizeStart);
-                resizeHandle.addEventListener('mousedown', resizeStart);
+            const startResize = (e) => {
+                e.preventDefault(); e.stopPropagation();
+                if(drawingMode) setDrawingMode(null, null);
 
-                function resizeStart(e) {
-                    e.preventDefault(); e.stopPropagation();
-                    if(drawingMode) setDrawingMode(null, null);
+                const p = e.touches ? e.touches[0] : e;
+                const startX = p.clientX;
+                
+                let content = el.querySelector('.item-content');
+                if(content.firstElementChild) content = content.firstElementChild;
 
-                    const p = e.touches ? e.touches[0] : e;
-                    const startX = p.clientX;
-                    
-                    let content = el.querySelector('.item-content');
-                    if(content.firstElementChild) content = content.firstElementChild;
+                const style = window.getComputedStyle(content);
+                const isText = content.classList.contains('custom-input-text') || content.classList.contains('sticker-text');
+                const startVal = isText ? parseFloat(style.fontSize) : parseFloat(content.style.width || content.offsetWidth);
 
-                    const style = window.getComputedStyle(content);
-                    const isText = content.classList.contains('custom-input-text') || content.classList.contains('sticker-text');
-                    const startVal = isText ? parseFloat(style.fontSize) : parseFloat(content.style.width || content.offsetWidth);
-
-                    const rMove = (em) => {
-                        const pm = em.touches ? em.touches[0] : em;
-                        const diff = pm.clientX - startX;
-                        if(isText) {
-                            let s = startVal + diff/2;
-                            if(s < 12) s = 12;
-                            content.style.fontSize = s + 'px';
+                const rMove = (em) => {
+                    const pm = em.touches ? em.touches[0] : em;
+                    const diff = (pm.clientX - startX) / stageScale;
+                    if(isText) {
+                        let s = startVal + diff/2;
+                        if(s < 12) s = 12;
+                        content.style.fontSize = s + 'px';
+                    } else {
+                        let s = startVal + diff;
+                        if(s < 20) s = 20;
+                        content.style.width = s + 'px';
+                        if (content.className.includes('shape-exp')) {
+                            content.style.height = (s * 0.75) + 'px';
+                        } else if (content.className.includes('shape-line')) {
+                            // 线条高度不变
                         } else {
-                            let s = startVal + diff;
-                            if(s < 20) s = 20;
-                            content.style.width = s + 'px';
-                            // 爆炸框中心扩大
-                            if (content.className.includes('shape-exp')) {
-                                content.style.height = (s * 0.75) + 'px';
-                            } else if (content.className.includes('shape-line')) {
-                                // 线条只变宽
-                            } else {
-                                // 矩形等
-                                content.style.height = (parseFloat(content.style.height) + diff) + 'px';
-                            }
+                            // 矩形等比例
+                            content.style.height = (parseFloat(content.style.height) + diff) + 'px';
                         }
-                    };
-                    const rUp = () => {
-                        window.removeEventListener('mousemove', rMove);
-                        window.removeEventListener('touchmove', rMove);
-                        window.removeEventListener('mouseup', rUp);
-                        window.removeEventListener('touchend', rUp);
-                    };
-                    window.addEventListener('mousemove', rMove);
-                    window.addEventListener('touchmove', rMove, {passive: false});
-                    window.addEventListener('mouseup', rUp);
-                    window.addEventListener('touchend', rUp);
-                }
+                    }
+                };
+                const rUp = () => {
+                    window.removeEventListener('mousemove', rMove);
+                    window.removeEventListener('touchmove', rMove);
+                    window.removeEventListener('mouseup', rUp);
+                    window.removeEventListener('touchend', rUp);
+                };
+                window.addEventListener('mousemove', rMove);
+                window.addEventListener('touchmove', rMove, {passive: false});
+                window.addEventListener('mouseup', rUp);
+                window.addEventListener('touchend', rUp);
+            };
+
+            if(resizeHandle) {
+                resizeHandle.addEventListener('touchstart', startResize);
+                resizeHandle.addEventListener('mousedown', startResize);
             }
 
             // 旋转
-            if (rotateHandle) {
-                rotateHandle.addEventListener('touchstart', rotateStart);
-                rotateHandle.addEventListener('mousedown', rotateStart);
+            const startRotate = (e) => {
+                e.preventDefault(); e.stopPropagation();
+                if(drawingMode) setDrawingMode(null, null);
 
-                function rotateStart(e) {
-                    e.preventDefault(); e.stopPropagation();
-                    if(drawingMode) setDrawingMode(null, null);
+                const rect = el.getBoundingClientRect();
+                const center = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
 
-                    const rect = el.getBoundingClientRect();
-                    const center = {
-                        x: rect.left + rect.width / 2,
-                        y: rect.top + rect.height / 2
-                    };
+                const rotMove = (em) => {
+                    const pm = em.touches ? em.touches[0] : em;
+                    const angle = Math.atan2(pm.clientY - center.y, pm.clientX - center.x);
+                    const deg = angle * (180 / Math.PI) + 90;
+                    el.style.transform = `rotate(${deg}deg)`;
+                };
+                const rotUp = () => {
+                    window.removeEventListener('mousemove', rotMove);
+                    window.removeEventListener('touchmove', rotMove);
+                    window.removeEventListener('mouseup', rotUp);
+                    window.removeEventListener('touchend', rotUp);
+                };
+                window.addEventListener('mousemove', rotMove);
+                window.addEventListener('touchmove', rotMove, {passive: false});
+                window.addEventListener('mouseup', rotUp);
+                window.addEventListener('touchend', rotUp);
+            };
 
-                    const rotMove = (em) => {
-                        const pm = em.touches ? em.touches[0] : em;
-                        const angle = Math.atan2(pm.clientY - center.y, pm.clientX - center.x);
-                        const deg = angle * (180 / Math.PI) + 90;
-                        el.style.transform = `rotate(${deg}deg)`;
-                    };
-                    const rotUp = () => {
-                        window.removeEventListener('mousemove', rotMove);
-                        window.removeEventListener('touchmove', rotMove);
-                        window.removeEventListener('mouseup', rotUp);
-                        window.removeEventListener('touchend', rotUp);
-                    };
-                    window.addEventListener('mousemove', rotMove);
-                    window.addEventListener('touchmove', rotMove, {passive: false});
-                    window.addEventListener('mouseup', rotUp);
-                    window.addEventListener('touchend', rotUp);
-                }
+            if(rotateHandle) {
+                rotateHandle.addEventListener('touchstart', startRotate);
+                rotateHandle.addEventListener('mousedown', startRotate);
             }
         }
 
         // --- 绘图 (红框/爆炸/色块/线条) ---
         function setDrawingMode(mode, btn) {
+            // 点击已激活按钮，关闭绘图
             if(drawingMode === mode) {
                 drawingMode = null;
                 document.getElementById('drawOverlay').style.display = 'none';
@@ -1327,8 +1453,8 @@
             e.preventDefault();
             const p = e.touches ? e.touches[0] : e;
             const rect = overlay.getBoundingClientRect();
-            dStartX = p.clientX - rect.left;
-            dStartY = p.clientY - rect.top;
+            dStartX = (p.clientX - rect.left) / stageScale;
+            dStartY = (p.clientY - rect.top) / stageScale;
             
             tempDrawingEl = document.createElement('div');
             tempDrawingEl.className = 'temp-drawing-shape';
@@ -1354,26 +1480,28 @@
             const move = (em) => {
                 em.preventDefault();
                 const pm = em.touches ? em.touches[0] : em;
-                const dEndX = pm.clientX - rect.left;
-                const dEndY = pm.clientY - rect.top;
+                
+                const currentX = (pm.clientX - rect.left) / stageScale;
+                const currentY = (pm.clientY - rect.top) / stageScale;
                 
                 let x, y, w, h;
                 
                 if (drawingMode === 'line') {
-                    w = Math.abs(dEndX - dStartX);
+                    w = Math.abs(currentX - dStartX);
                     h = 6; 
-                    x = Math.min(dStartX, dEndX);
+                    x = Math.min(dStartX, currentX);
                     y = dStartY; 
                 } else if(drawingMode === 'explosion') {
-                    w = Math.abs(dEndX - dStartX) * 2;
-                    h = Math.abs(dEndY - dStartY) * 2;
+                    // 中心扩散
+                    w = Math.abs(currentX - dStartX) * 2;
+                    h = Math.abs(currentY - dStartY) * 2;
                     x = dStartX - w/2;
                     y = dStartY - h/2;
                 } else {
-                    w = Math.abs(dEndX - dStartX);
-                    h = Math.abs(dEndY - dStartY);
-                    x = Math.min(dStartX, dEndX);
-                    y = Math.min(dStartY, dEndY);
+                    w = Math.abs(currentX - dStartX);
+                    h = Math.abs(currentY - dStartY);
+                    x = Math.min(dStartX, currentX);
+                    y = Math.min(dStartY, currentY);
                 }
                 
                 tempDrawingEl.style.width = w + 'px';
@@ -1383,10 +1511,6 @@
             }
 
             const up = (em) => {
-                const pm = em.changedTouches ? em.changedTouches[0] : em;
-                const dEndX = pm.clientX - rect.left;
-                const dEndY = pm.clientY - rect.top;
-                
                 const finalW = parseFloat(tempDrawingEl.style.width);
                 const finalH = parseFloat(tempDrawingEl.style.height);
                 const finalX = parseFloat(tempDrawingEl.style.left);
@@ -1444,10 +1568,15 @@
             historyStack = [];
         }
 
-        // --- 核心：合成 (原地快照法) ---
+        // --- 合成 ---
         function finishAnnotation() {
             deselectAllItems(); // 隐藏把手
             
+            const oldScale = stageScale;
+            const oldX = stageX;
+            const oldY = stageY;
+            resetZoom();
+
             const stage = document.getElementById('workStage');
             
             html2canvas(stage, {
@@ -1455,8 +1584,12 @@
                 scale: 2,
                 logging: false
             }).then(canvas => {
+                stageScale = oldScale;
+                stageX = oldX;
+                stageY = oldY;
+                updateStageTransform();
+
                 const finalUrl = canvas.toDataURL('image/jpeg', 0.9);
-                
                 const target = document.getElementById(currentTargetId);
                 target.src = finalUrl;
                 target.classList.remove('hidden');
@@ -1479,7 +1612,6 @@
         function downloadCard() {
             const card = document.getElementById('capture-area');
             const text = document.getElementById('mainText');
-            // 锁定高度防抖动
             const h = text.offsetHeight;
             text.style.height = h + 'px';
             text.style.overflow = 'hidden';
