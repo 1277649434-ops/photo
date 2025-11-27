@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>教育卡片生成器</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        /* 自定义字体定义 */
+        @font-face {
+            font-family: 'Microsoft YaHei';
+            src: local('Microsoft YaHei'), local('PingFang SC');
+        }
+
+        body {
+            background-color: #f3f4f6;
+            font-family: 'Microsoft YaHei', sans-serif;
+            -webkit-tap-highlight-color: transparent; /* 移除点击高亮 */
+        }
+
+        /* 天蓝到藏青色渐变背景 */
+        .card-container {
+            background: linear-gradient(180deg, #87CEEB 0%, rgb(87, 38, 125) 100%);
+        }
+        
+        /* 统一的大块雾化玻璃效果 */
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.15);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            border-radius: 1rem;
+        }
+
+        /* 装饰背景 */
+        .wave-decor {
+            position: absolute;
+            top: 40%;
+            left: -10%;
+            width: 120%;
+            height: 60%;
+            background: radial-gradient(circle, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0) 70%);
+            transform: rotate(-15deg);
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        /* 字体样式：微软雅黑 + 斜体 + 加粗 */
+        .custom-text-style {
+            font-family: 'Microsoft YaHei', sans-serif;
+            font-style: italic;
+            font-weight: bold; /* 修改为加粗 */
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .content-layer {
+            position: relative;
+            z-index: 10;
+        }
+
+        /* 修正截图偏移 */
+        #capture-area {
+            overflow: hidden; 
+            box-sizing: border-box;
+        }
+
+        /* 结果模态框 */
+        #resultModal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.9);
+            z-index: 9999;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            touch-action: none;
+        }
+
+        #resultImg {
+            -webkit-touch-callout: default !important;
+            -webkit-user-select: none;
+            user-select: none;
+            pointer-events: auto !important;
+            touch-action: auto;
+        }
+        
+        /* 刷新按钮样式 */
+        .refresh-btn {
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        /* 鼠标悬停或移动端始终可见(通过JS处理) */
+        .text-wrapper:hover .refresh-btn {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center py-6 px-4 sm:justify-center">
+
+    <!-- 提示 -->
+    <div class="mb-4 text-center text-gray-600 max-w-lg">
+        <h1 class="text-2xl font-bold mb-1 text-gray-800">教育卡片生成器</h1>
+        <p class="text-xs sm:text-sm text-gray-500">双击文本可编辑 | 点击图片区域上传</p>
+    </div>
+
+    <!-- 卡片区域 -->
+    <div id="capture-area" class="card-container rounded-[2rem] shadow-2xl w-full max-w-[480px] relative flex flex-col p-5 sm:p-6 overflow-hidden mx-auto">
+        
+        <!-- 背景装饰 -->
+        <div class="wave-decor"></div>
+
+        <div class="content-layer flex flex-col h-full">
+            
+            <!-- 统一的玻璃面板容器 -->
+            <div class="glass-panel flex flex-col p-4 sm:p-5 mb-5 sm:mb-6">
+                
+                <!-- 1. 顶部栏：Logo + 星星 -->
+                <div class="flex justify-between items-start mb-3 sm:mb-4 border-b border-white/10 pb-3">
+                    <!-- Logo 区域 -->
+                    <div class="relative group cursor-pointer mr-4 flex-shrink-0" onclick="document.getElementById('logoInput').click()">
+                        <img id="logoImg" src="data:image/png;base64,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" alt="Logo">
+                        <div class="absolute inset-0 bg-black/20 hidden group-hover:flex items-center justify-center text-white text-xs rounded transition-all">替换</div>
+                        <input type="file" id="logoInput" accept="image/*" onchange="handleImageUpload(this, 'logoImg')">
+                    </div>
+
+                    <!-- 五颗星 -->
+                    <div class="flex space-x-1 pt-1">
+                        <span class="text-yellow-400 text-base sm:text-lg">★</span>
+                        <span class="text-yellow-400 text-base sm:text-lg">★</span>
+                        <span class="text-yellow-400 text-base sm:text-lg">★</span>
+                        <span class="text-yellow-400 text-base sm:text-lg">★</span>
+                        <span class="text-yellow-400 text-base sm:text-lg">★</span>
+                    </div>
+                </div>
+
+                <!-- 2. 中间内容：文字 + 图片 -->
+                <div class="flex flex-col mb-3 sm:mb-4">
+                    <!-- 文字说明 (带切换按钮) -->
+                    <div class="mb-3 sm:mb-4 relative text-wrapper group">
+                        <!-- 字体大小调整：text-xl (移动端), sm:text-2xl (PC端) -->
+                        <p id="mainText" contenteditable="true" 
+                           class="custom-text-style text-xl sm:text-2xl leading-relaxed text-white p-2 border border-transparent hover:border-white/30 rounded transition-colors outline-none cursor-text drop-shadow-sm pr-8">
+                           "双击文字可以编辑 ，每次都需要手动上传 logo，图片文字替换完成以后点击下载按钮下载，如果下载不了请切换浏览器，如 edge 等，"
+                        </p>
+                        <!-- 切换文案按钮 (不参与截图) -->
+                        <button onclick="changeQuote()" data-html2canvas-ignore="true" class="refresh-btn absolute bottom-2 right-2 p-1.5 rounded-full bg-white/20 hover:bg-white/40 text-white backdrop-blur-sm transition-all" title="换一句">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                            </svg>
+                        </button>
+                    </div>
+
+                    <!-- 中间大图 -->
+                    <div class="w-full relative group cursor-pointer overflow-hidden rounded-lg bg-black/10" onclick="document.getElementById('mainImageInput').click()">
+                        <div class="w-full h-full flex items-center justify-center border-2 border-dashed border-white/30 hover:border-white/60 transition-all relative min-h-[200px] sm:min-h-[220px]">
+                            <img id="mainImg" src="" class="w-full h-auto object-cover hidden relative z-10" alt="主要图片">
+                            <!-- 占位符 -->
+                            <div id="mainImgPlaceholder" class="text-white/80 text-center py-10 px-4 absolute z-0 top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-full">
+                                <svg class="w-10 h-10 mx-auto mb-2 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                                <p class="text-sm">点击上传图片</p>
+                            </div>
+                        </div>
+                        <input type="file" id="mainImageInput" accept="image/*" onchange="handleMainImageUpload(this)">
+                    </div>
+                </div>
+
+                <!-- 3. 底部栏：家长信息 -->
+                <div class="flex items-center pt-3 border-t border-white/10">
+                    <!-- 头像 -->
+                    <div class="relative cursor-pointer shrink-0" onclick="document.getElementById('avatarInput').click()">
+                        <div id="avatarContainer" class="w-12 h-12 rounded-full bg-white/20 border border-white/40 overflow-hidden flex items-center justify-center shadow-inner backdrop-blur-md">
+                            <img id="avatarImg" src="" class="w-full h-full object-cover">
+                        </div>
+                        <input type="file" id="avatarInput" accept="image/*" onchange="handleAvatarUpload(this)">
+                    </div>
+
+                    <!-- 姓名与年级 -->
+                    <div class="ml-3 flex flex-col justify-center text-white">
+                        <span id="parentName" contenteditable="true" 
+                              class="text-base font-bold border-b border-transparent hover:border-white/50 outline-none leading-tight pb-0.5">
+                            家长姓名
+                        </span>
+                        <span contenteditable="true" 
+                              class="text-xs opacity-80 border-b border-transparent hover:border-white/50 outline-none mt-0.5">
+                            三年级二班
+                        </span>
+                    </div>
+                    
+                    <!-- 装饰引号 -->
+                    <div class="ml-auto opacity-30 text-white text-3xl sm:text-4xl font-serif leading-none select-none">”</div>
+                </div>
+
+            </div> <!-- 玻璃面板结束 -->
+
+            <!-- 底部 Slogan -->
+            <div class="mt-auto text-center pb-2">
+                <h2 class="text-white text-xs sm:text-sm font-medium font-sans tracking-widest opacity-80 drop-shadow-md">
+                    做有温度的教育 &nbsp;&nbsp;&nbsp; 做有梦想的教育
+                </h2>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- 底部按钮 -->
+    <button onclick="downloadCard()" class="mt-6 mb-10 bg-slate-700 hover:bg-slate-800 text-white font-medium py-3 px-8 rounded-full shadow-lg transition-all hover:scale-105 active:scale-95 flex items-center gap-2 text-sm z-50">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+        保存图片
+    </button>
+
+    <!-- 结果预览模态框 -->
+    <div id="resultModal" onclick="closeModal()">
+        <div class="text-white text-center mb-4 relative z-50" onclick="event.stopPropagation()">
+            <p class="text-lg font-bold">图片已生成</p>
+            <p class="text-sm opacity-80 mt-1">请长按下方图片保存到相册</p>
+        </div>
+        <img id="resultImg" class="max-w-[90%] max-h-[75%] rounded-lg shadow-2xl border-2 border-white/20 relative z-50" alt="Result">
+        <button onclick="closeModal()" class="mt-6 bg-white/20 hover:bg-white/30 text-white px-6 py-2 rounded-full text-sm backdrop-blur-sm transition-colors relative z-50" onclick="event.stopPropagation()">
+            关闭窗口
+        </button>
+    </div>
+
+    <script>
+        // 励志语录库
+        const quotes = [
+            "天道酬勤，厚积薄发",
+            "每次付出都有意义，付出在哪里，收获就在哪里，时间会在你身上雕刻出努力的痕迹。",
+            "星光不问赶路人，时光不负有心人。你现在的每一分努力，都是在为未来的幸运埋下伏笔。",
+            "学习不仅仅是为了那一张试卷，而是为了让你拥有选择世界的权利，而不是被迫被世界选择。",
+            "曾国藩曾说：“结硬寨，打呆仗。”学习没有捷径，唯一的捷径就是一步一个脚印的踏实。",
+            "即使在最黑暗的泥土里，种子也在默默积蓄力量。你现在的沉默，是为了将来破土而出的惊艳。",
+            "那些看似不开窍的日子，其实是在扎根。竹子前四年只长几厘米，第五年却能每天生长三十厘米。",
+            "不要假装努力，结果不会陪你演戏。骗得过别人，骗不过深夜里焦虑的自己。",
+            "鲁迅先生说：“哪有什么天才，我只是把别人喝咖啡的工夫都用在了工作上。”把碎片时间利用起来，你就在超越。",
+            "既然选择了远方，便只顾风雨兼程。路漫漫其修远兮，吾将上下而求索。",
+            "当你想要放弃的时候，想一想当初为什么开始，想一想那些期待的眼神，和那个不甘平庸的自己。",
+            "所谓的黑马，不过是厚积薄发；所谓的逆袭，不过是有备而来。",
+            "只有极其努力，才能看起来毫不费力。优异的成绩背后，是无数个无人问津的日夜。",
+            "哈佛图书馆的训言：此刻打盹，你将做梦；此刻学习，你将圆梦。",
+            "这一秒不放弃，下一秒就有希望。坚持下去才可能发生奇迹，而不是看到了奇迹才去坚持。",
+            "无论黑夜多么漫长，白昼总会到来。你现在的迷茫和痛苦，都是黎明前最后的黑暗。",
+            "书山有路勤为径，学海无涯苦作舟。古人的智慧告诉我们，勤奋和刻苦是通往知识殿堂的唯一通行证。",
+            "你背不下来的书，总有人能背下来；你做不出来的题，总有人能做出来；你愿意拖到明天的事，总有人今天努力做完。",
+            "不要在那页读不懂的书上停留太久，继续往下读，时间会给你答案。学习也是如此，坚持下去，豁然开朗。",
+            "真正的强者，不是没有眼泪的人，而是含着眼泪依然奔跑的人。",
+            "种一棵树最好的时间是十年前，其次是现在。学习永远不嫌晚，只要你现在开始行动。",
+            "尼采说：“每一个不曾起舞的日子，都是对生命的辜负。”对于学生而言，每一个不曾努力学习的日子，都是对未来的辜负。",
+            "今天的晚睡，是为了明天的早起；今天的辛苦，是为了未来的自由。",
+            "将来的你，一定会感谢现在拼命努力的自己。",
+            "没有谁的运气是凭空而来的，只有当你足够努力，你才会足够幸运。这世界不会辜负每一份坚持和汗水。",
+            "你的对手在看书，你的仇人在磨刀，你的闺蜜在减肥，隔壁老王在练腰。你有什么理由不努力？",
+            "学习的痛苦是暂时的，未学到的痛苦是终身的。",
+            "只有耐得住寂寞，才能守得住繁华。在别人喧嚣的时候安静学习，你才能在别人沉默的时候发出声音。",
+            "宝剑锋从磨砺出，梅花香自苦寒来。不经一番寒彻骨，怎得梅花扑鼻香。",
+            "如果你觉得现在走得很辛苦，那就证明你在走上坡路。下坡路虽然舒服，但通向的是低谷。",
+            "所有的偷懒，最后都会变成打脸的巴掌。所有的努力，最后都会变成岁月的勋章。",
+            "海明威在《老人与海》中写道：“一个人可以被毁灭，但不能被打败。”在学习的战场上，你可以失败，但绝不能认输。",
+            "你的时间有限，所以不要为别人而活。不要被教条所限，不要活在别人的观念里。听从自己内心的声音，去追逐知识。",
+            "哪怕只有百分之一的希望，也要付出百分之百的努力。因为人生很多时候，不是看到了希望才坚持，而是坚持了才看到希望。",
+            "今天的汗水，是为了冲淡未来的泪水。",
+            "读书是为了让你遇见更好的自己，见到更广阔的世界，而不是为了某种功利的目的。",
+            "世界上最可怕的事是：比你优秀的人，比你还努力。",
+            "天才就是百分之九十九的汗水加百分之一的灵感。虽然灵感很重要，但没有那汗水，灵感永远不会降临。",
+            "任何值得去的地方，都没有捷径。一步一个脚印，才是最快的速度。",
+            "罗曼·罗兰说：“世界上只有一种英雄主义，那就是认清生活的真相后依然热爱生活。”学习的英雄主义，是认清学习的枯燥后依然热爱求知。",
+            "不积跬步，无以至千里；不积小流，无以成江海。每天一点点的进步，终将汇聚成成功的汪洋。",
+            "那些你熬夜努力的时光，那些你早起背诵的单词，终将成为你脚下的路，送你去想去的地方。",
+            "乾坤未定，你我皆是黑马。只要考试结束铃声未响，一切皆有可能。",
+            "学习就像长跑，最难的不是起跑，而是中途的坚持和最后的冲刺。咬紧牙关，你就是冠军。",
+            "你的气质里，藏着你读过的书和走过的路。",
+            "努力不是为了感动谁，也不是为了做给谁看，而是为了让自己随时有能力跳出自己厌恶的圈子，并拥有选择的权利。",
+            "凡是过往，皆为序章。无论过去成绩如何，从此刻开始努力，未来依然可期。",
+            "苏轼说：“古之立大事者，不惟有超世之才，亦必有坚忍不拔之志。”智商决定下限，毅力决定上限。",
+            "别让你的梦想，只停留在梦里。拿起笔，翻开书，这就是实现梦想的第一步。",
+            "我们可以平凡，但绝不能平庸。通过学习，我们可以让平凡的生命散发出不平凡的光彩。",
+            "只有登上山顶，才能看到那边的风光。在半山腰喊累的人，永远无法领略顶峰的景色。",
+            "你流下的每一滴汗水，都会浇灌出未来的花朵。",
+            "不要因为一次失败就否定自己，考试只是检测，不是判决。每一次跌倒，都是为了更好地站起来。",
+            "无论世界如何喧嚣，请在内心留一盏灯，照亮书桌，照亮前路。",
+            "既然目标是地平线，留给世界的只能是背影。",
+            "泰戈尔说：“只有流过血的手指，才能弹出世间的绝唱。”只有经过炼狱般的磨练，才能拥有创造天堂的力量。",
+            "你的负担将变成礼物，你受的苦将照亮你的路。",
+            "当你足够优秀时，你想要的一切都会来找你。现在的努力，是为了让未来的自己更有价值。",
+            "学习没有假期，梦想不打烊。",
+            "所谓的光辉岁月，并不是以后闪耀的日子，而是无人问津时，你对梦想的偏执。",
+            "人生没有白走的路，每一步都算数。你背过的每一个公式，做过的每一道题，都在铺就通往成功的阶梯。",
+            "只有拼尽全力，才有资格说运气不好。",
+            "你的潜力远比你想象的要大，不要轻易给自己设限。逼自己一把，你会发现自己有多优秀。",
+            "只有经受住考验，才能配得上梦想。",
+            "最慢的步伐不是跬步，而是徘徊；最快的脚步不是冲刺，而是坚持。",
+            "真正的努力，不是做给别人看的，而是为了让自己心安。",
+            "就算全世界都否定你，你也要相信自己。你生来就是为了高山而非溪流，为了群星而非野草。",
+            "每一本打开的书，都是一个等待被探索的世界。每一支写完的笔，都是一把斩断荆棘的利剑。",
+            "没有伞的孩子，必须努力奔跑。",
+            "只要路是对的，就不怕路远。",
+            "那些独自努力的时光，终会让你变成光。",
+            "成功不是将来才有的，而是从决定去做的那一刻起，持续累积而成的。",
+            "你现在的态度，决定你十年后的高度。",
+            "哪怕是一只蜗牛，只要坚持不懈，也能爬上金字塔的顶端。",
+            "任何时候开始都不晚，晚的是你从来都不敢开始。",
+            "学习虽然苦，但那是你看世界的路。",
+            "只有把细节做到极致，才能成就完美。学习中的每一个知识点，都是通往满分的基石。",
+            "能够耐得住寂寞的人，往往有着更远大的志向。",
+            "不为失败找借口，只为成功找方法。",
+            "与其临渊羡鱼，不如退而结网。羡慕别人的成绩，不如自己埋头苦读。",
+            "今天的努力，是明天最强的底气。",
+            "无论多难，由于坚持，一切都会变得容易。",
+            "生命不息，奋斗不止。学习是一辈子的事，不仅是为了学历，更是为了灵魂的丰盈。",
+            "做难事必有所得。那些让你感到痛苦的题目，正是你成长的契机。",
+            "不要因为也许会改变，就不肯说那句美丽的誓言；不要因为也许会分离，就不敢求一次倾心的相遇；不要因为也许会失败，就不肯付出那份真挚的努力。",
+            "高考/中考 是一场兵荒马乱的战争，而你就是那个统领千军万马的将军。",
+            "你必须非常努力，才能让人觉得你毫不费力。",
+            "把简单的招式练到极致就是绝招。把基础知识掌握得滚瓜烂熟，你就是学霸。",
+            "只要你不认输，就没有人能让你输。",
+            "未来的你，会感谢现在那个咬牙坚持的自己。",
+            "不想认命，就去拼命。",
+            "你的职责是平整土地，而非焦虑时光。你做三四月的事，在八九月自有答案。",
+            "成功路上并不拥挤，因为坚持的人不多。",
+            "能够控制自己时间的人，才能控制自己的人生。",
+            "每一个清晨，都是一个新的开始。不要带着昨天的遗憾醒来，要带着今天的目标出发。",
+            "哪怕跌倒一百次，也要第一百零一次站起来。",
+            "学习不是为了给别人看，而是为了丰富自己的内心。",
+            "只有不断奔跑，才能留在原地。在这个快速发展的时代，停滞就是倒退。",
+            "每一个优秀的人，都有一段沉默的时光。那段时光，是付出了很多努力，忍受了很多孤独和寂寞，不抱怨不诉苦，只有自己知道。",
+            "不要让未来的你，讨厌现在的自己。",
+            "你想要的，岁月都会给你。前提是，你得等得起，你得配得上。",
+            "锲而舍之，朽木不折；锲而不舍，金石可镂。荀子的教诲，至今振聋发聩。",
+            "努力不一定成功，但不努力一定很轻松？不，不努力的轻松是暂时的，未来的代价是沉重的。",
+            "别在最能吃苦的年纪，选择了安逸。",
+            "每一道做错的题，都是一个宝藏，它指出了你思维的漏洞。",
+            "只有当你把学习当成一种习惯，你才能真正体会到其中的乐趣。",
+            "真正的聪明，是用笨功夫。",
+            "哪怕微不足道，也要掷地有声。",
+            "现在的低头，是为了将来的抬头。",
+            "所有的逆袭，都是有备而来；所有的光芒，都需要时间才能被看到。",
+            "你的每一份努力，上帝都看在眼里，记在账上。",
+            "学习是反人性的，所以优秀的人永远是少数。",
+            "不去耕耘，不去播种，再肥的沃土也长不出庄稼；不去奋斗，不去创造，再美的青春也结不出硕果。",
+            "只要方向是对的，慢一点也没关系。",
+            "那些挑灯夜战的日子，终将照亮你前行的路。",
+            "我们终其一生，就是要摆脱他人的期待，找到真正的自己。而学习，是找到自己的最佳途径。",
+            "没有天生的学霸，只有不懈的努力。",
+            "你的努力，是为了让你在未来拥有更多拒绝的权利。",
+            "只有拼出来的美丽，没有等出来的辉煌。",
+            "无论成绩好坏，请保持一颗求知的心。",
+            "每天进步一点点，一年之后就是巨大的飞跃。1.01的365次方约等于37.8，0.99的365次方约等于0.03。",
+            "不要被假象迷惑，真实的进步往往是无声的。",
+            "只有你自己最清楚，你是否真的尽力了。",
+            "学习是通往自由的阶梯。",
+            "你的梦想，需要你的努力来买单。",
+            "每一个不甘平庸的灵魂，都值得被尊重。",
+            "就算头破血流，也要撞破南墙。",
+            "不要给自己的懒惰找借口。",
+            "所有的运气，都是实力的累积。",
+            "既然选择了远方，就不要怕风雨兼程。",
+            "你的对手比你强，还比你努力。",
+            "只有坚持到最后，才能看到彩虹。",
+            "学习不仅是获取知识，更是磨练意志。",
+            "每一个成功者都有一个开始。勇于开始，才能找到成功的路。",
+            "不要等待机会，而要创造机会。",
+            "只有不断的努力，才能填补天赋的差距。",
+            "你的未来，掌握在你自己手中。",
+            "只有经历过地狱般的磨练，才能练就创造天堂的力量。",
+            "既然活着，就要活出精彩。",
+            "学习是世界上最公平的事情，一分耕耘，一分收获。",
+            "不要让今天的懒惰，成为明天的遗憾。",
+            "只有努力，才能改变命运。",
+            "你的努力，终将得到回报。",
+            "每一个奋斗的日子，都值得纪念。",
+            "只有坚持，才能看到希望。",
+            "学习是一种信仰。",
+            "你的汗水，不会白流。",
+            "只有拼搏，才能赢得未来。",
+            "每一个梦想，都值得被灌溉。",
+            "只有努力，才能不负青春。",
+            "你的未来，由你定义。",
+            "哪怕只有万分之一的可能，也要做一万分的努力。",
+            "有志者，事竟成，破釜沉舟，百二秦关终属楚；苦心人，天不负，卧薪尝胆，三千越甲可吞吴。",
+            "人生最大的失败，不是跌倒，而是不敢奔跑。",
+            "今天的苦，是为了明天的甜。",
+            "只有当你足够强大，世界才会对你和颜悦色。",
+            "学习不仅仅是为了分数，更是为了拥有独立的思想。",
+            "你的努力，是你最坚实的铠甲。",
+            "只有不断挑战自己，才能超越自己。",
+            "每一个清晨的早起，都是对梦想的致敬。",
+            "不要羡慕别人的光芒，你自己也是一颗星星。",
+            "学习是最低门槛的高贵。",
+            "只有耐得住寂寞，才能拥抱繁华。",
+            "你的坚持，终将美好。",
+            "哪怕风雨兼程，也要向着阳光奔跑。",
+            "每一个不眠的夜晚，都是为了更耀眼的明天。",
+            "只有努力，才能让梦想照进现实。",
+            "你的付出，时间看得见。",
+            "只有不断攀登，才能看到更远的风景。",
+            "学习是一场马拉松，不是百米冲刺。",
+            "你的未来，藏在你的努力里。",
+            "只有拼尽全力，才能无怨无悔。",
+            "每一个微小的进步，都值得庆祝。",
+            "只有坚持，才能创造奇迹。",
+            "学习是改变命运的钥匙。",
+            "你的汗水，是成功的养料。",
+            "只有努力，才能不负韶华。",
+            "每一个梦想，都需要行动来支撑。",
+            "只有拼搏，才能赢得尊重。",
+            "学习是一种生活方式。",
+            "你的努力，终将闪光。",
+            "只有不断前行，才能抵达彼岸。",
+            "每一个挑战，都是成长的机会。",
+            "只有坚持，才能看到胜利的曙光。",
+            "学习是为了更好的选择。",
+            "你的付出，终会有回报。",
+            "只有努力，才能改变现状。",
+            "每一个奋斗的身影，都是最美的风景。",
+            "只有拼搏，才能书写辉煌。",
+            "学习是提升自我价值的途径。",
+            "你的努力，是为了遇见更好的自己。",
+            "只要心中有光，脚下就有路。",
+            "没有什么比努力更能让人心安理得。",
+            "昨天的太阳，晒不干今天的衣裳；过往的辉煌，代表不了现在的成就。",
+            "你的脑子里有多少才华，你的步伐里就有多少自信。",
+            "真正能让你倒下的，不是对手，而是你自己的绝望。",
+            "不要在该奋斗的年纪选择安逸，否则你将在该安逸的年纪被迫奋斗。",
+            "即使是咸鱼，也要做最咸的那一条；即使是草根，也要做最坚韧的那一株。",
+            "风雨过后，不一定有彩虹，但一定会放晴。努力过后，不一定成功，但一定会有收获。",
+            "所有的光鲜亮丽，背后都是惨不忍睹的坚持。",
+            "你多学一样本事，就少说一句求人的话。",
+            "读书不苦，不读书的人生才苦。",
+            "无论你现在处于什么位置，只要你肯努力，你总能向上走。",
+            "你的努力，是为了让爱你的人骄傲，让你爱的人幸福。",
+            "没有谁的青春是容易的，只有当你咬牙坚持，青春才会发出光芒。",
+            "只有把书读进骨子里，才能吐出芬芳的灵魂。",
+            "你的成绩，是对你过去一段时间努力的最好反馈。",
+            "不要害怕走弯路，弯路也是路，而且沿途的风景更独特。",
+            "每一个优秀的人，都有一段“置之死地而后生”的经历。",
+            "只有你自己，才能拯救你自己。",
+            "学习是唯一一件只要付出就有回报的事情，虽然回报的周期可能有点长。",
+            "你的努力，是为了让你在面对世界时，更有底气。",
+            "只有不断学习，才能不被时代抛弃。",
+            "每一个梦想都值得呵护，每一份努力都值得尊重。",
+            "只有坚持到底，才能笑到最后。",
+            "学习是为了让你看到更大的世界，而不是为了把你困在书本里。",
+            "你的汗水，会变成你皇冠上的宝石。",
+            "只有拼尽全力，才能不留遗憾。",
+            "每一个日夜的奋斗，都是为了心中的那座灯塔。",
+            "只有努力，才能让你配得上你的野心。",
+            "学习是成长的必经之路。",
+            "你的未来，由你现在的每一个选择决定。",
+            "只有不断突破，才能看到新的风景。",
+            "每一个困难，都是包装后的礼物。",
+            "只有坚持，才能让梦想开花结果。",
+            "学习是为了让你拥有更广阔的视野。",
+            "你的努力，终将成就你的辉煌。",
+            "只有拼搏，才能赢得未来。",
+            "每一个奋斗的瞬间，都值得铭记。",
+            "只有努力，才能不负众望。",
+            "学习是提升能力的阶梯。",
+            "你的付出，是成功的基石。",
+            "只有不断前行，才能到达理想的彼岸。",
+            "每一个梦想，都需要汗水来浇灌。",
+            "只有坚持，才能看到成功的希望。",
+            "学习是为了让你拥有更多的可能性。",
+            "你的努力，是为了让你活成自己想要的样子。",
+            "只有拼搏，才能改变命运。",
+            "每一个不屈的灵魂，都值得歌颂。",
+            "只有努力，才能创造属于自己的奇迹。",
+            "学习是通往智慧的桥梁。",
+            "你的汗水，是青春最美的注脚。",
+            "只有坚持，才能让生命绽放光彩。",
+            "每一个梦想，都值得为之奋斗。",
+            "只有努力，才能不负此生。",
+            "学习是为了让你成为一个有温度、懂情趣、会思考的人。",
+            "你的未来，不是梦。",
+            "只有拼搏，才能赢得掌声。",
+            "每一个奋斗的日子，都将成为美好的回忆。",
+            "只有努力，才能让自己无可替代。",
+            "那些看似波澜不惊的日复一日，会在某一天，让你看到坚持的意义。",
+            "所有的好运，都是你积攒的人品和努力。",
+            "唯有成为更好的自己，世界才是你的。",
+            "你无法决定明天的太阳几点升起，但你可以决定几点起床。",
+            "只有把你逼到绝境，你才知道自己有多大潜能。",
+            "你的每一次专注，都在为你的大脑构建更强的神经网络。",
+            "那些看不见的光影，听不见的声响，都在你伏案苦读的瞬间，化作了力量。",
+            "真正的自由，是自律给的。",
+            "不要因为一次挫折就放弃整个人生，你的人生才刚刚开始。",
+            "你的每一个知识盲点，都是你未来的绊脚石。现在消灭它！",
+            "只有耐得住寂寞，才能守得住长远。",
+            "学习不仅仅是输入，更是输出。把学到的知识讲出来，才是真正的掌握。",
+            "你的书桌，就是你的战场。",
+            "只有不断反思，才能不断进步。",
+            "每一个错误，都是通往正确的路标。",
+            "只有专注于当下，才能赢得未来。",
+            "学习是为了让你在面对困难时，有更多的解决方案。",
+            "你的努力，是为了让你在未来拥有说“不”的底气。",
+            "只有坚持学习，才能保持年轻的心态。",
+            "每一个知识点，都是打开新世界的钥匙。",
+            "只有不断积累，才能厚积薄发。",
+            "学习是一种享受，享受获取知识的快感。",
+            "你的努力，是为了让你的人生少一些遗憾。",
+            "只有拼搏，才能让自己的人生更加精彩。",
+            "每一个梦想，都需要脚踏实地的努力。",
+            "只有坚持，才能让自己变得更加强大。",
+            "学习是为了让你看清世界的真相。",
+            "你的付出，终将得到岁月的馈赠。",
+            "只有努力，才能让自己的人生不设限。",
+            "每一个奋斗的足迹，都是成长的证明。",
+            "只有拼搏，才能让自己的人生没有白活。",
+            "学习是终身的事业。",
+            "你的努力，是为了让你拥有更高级的快乐。",
+            "只有坚持，才能让自己的人生更加充实。",
+            "每一个梦想，都值得用一生去追求。",
+            "只有努力，才能让自己的人生闪闪发光。",
+            "学习是为了让你成为那个不可或缺的人。",
+            "你的付出，是为了让你在未来能够保护你想保护的人。",
+            "只有拼搏，才能让自己的人生无悔。",
+            "每一个奋斗的日夜，都是生命中最美的乐章。",
+            "只有努力，才能让自己的人生充满希望。",
+            "那些被嘲笑的梦想，才有实现的价值。",
+            "不要总看别人光鲜亮丽，要看别人背后付出的艰辛。",
+            "你的每一分努力，都是在为你的未来增加筹码。",
+            "只有当你的才华撑得起你的野心时，你才能由着性子做自己。",
+            "学习，是让你从平庸走向卓越的最短路径。",
+            "愿你以梦为马，不负韶华。",
+            "愿你在合上笔盖的那一刻，有着战士收刀入鞘的骄傲。",
+            "愿你的努力，配得上你的梦想；愿你的付出，终有回报。",
+            "愿你出走半生，归来仍是少年；愿你历经千帆，终能得偿所愿。",
+            "加油，奋斗的你，未来可期！"
+        ];
+
+        // 随机选择并设置文案
+        function changeQuote() {
+            const randomIndex = Math.floor(Math.random() * quotes.length);
+            const randomQuote = quotes[randomIndex];
+            
+            const mainText = document.getElementById('mainText');
+            // 添加双引号格式
+            mainText.innerText = `"${randomQuote}"`;
+        }
+        
+        // 页面加载时自动设置一句
+        window.addEventListener('load', changeQuote);
+
+        // 植物头像逻辑
+        const plantAvatars = [
+            '<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><circle cx="50" cy="50" r="45" fill="#aaddaa"/><path d="M50 20 Q30 40 50 60 Q70 40 50 20 M50 60 L50 80 M40 70 L60 70" stroke="#558855" stroke-width="4" fill="none"/></svg>', 
+            '<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><circle cx="50" cy="50" r="45" fill="#ccccff"/><path d="M50 80 L50 40 M30 50 Q50 30 70 50" stroke="#6666aa" stroke-width="4" fill="none"/><circle cx="50" cy="35" r="10" fill="#8888cc"/></svg>',
+            '<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><circle cx="50" cy="50" r="45" fill="#ffddaa"/><rect x="45" y="50" width="10" height="30" fill="#885522"/><circle cx="50" cy="40" r="20" fill="#44aa44"/></svg>',
+            '<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><circle cx="50" cy="50" r="45" fill="#aaffdd"/><path d="M50 80 L50 30 M30 60 L50 40 L70 60" stroke="#448866" stroke-width="4" fill="none"/></svg>',
+            '<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><circle cx="50" cy="50" r="45" fill="#ffaaaa"/><path d="M50 80 L50 50 M35 40 Q50 20 65 40 Q80 60 50 80 Q20 60 35 40" fill="#cc4444"/></svg>',
+            '<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><circle cx="50" cy="50" r="45" fill="#ddffaa"/><path d="M50 80 L50 20 M30 40 L70 40 M30 60 L70 60" stroke="#66aa44" stroke-width="4" fill="none"/></svg>',
+            '<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><circle cx="50" cy="50" r="45" fill="#aaddff"/><circle cx="50" cy="50" r="25" fill="#dddd44"/><circle cx="50" cy="50" r="10" fill="#885522"/></svg>',
+            '<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><circle cx="50" cy="50" r="45" fill="#ffaadd"/><path d="M50 80 L50 60" stroke="#44aa44" stroke-width="4" fill="none"/><circle cx="40" cy="50" r="15" fill="#cc6699"/><circle cx="60" cy="50" r="15" fill="#cc6699"/><circle cx="50" cy="35" r="15" fill="#cc6699"/></svg>',
+            '<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><circle cx="50" cy="50" r="45" fill="#dddddd"/><path d="M50 80 C 20 60, 20 40, 50 20 C 80 40, 80 60, 50 80" fill="#66aa66"/></svg>',
+            '<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><circle cx="50" cy="50" r="45" fill="#ffffaa"/><rect x="48" y="60" width="4" height="20" fill="#885522"/><circle cx="50" cy="45" r="25" fill="#ffcc44"/></svg>'
+        ];
+
+        function svgToPngDataUrl(svgString, callback) {
+            const img = new Image();
+            const base64 = window.btoa(unescape(encodeURIComponent(svgString)));
+            img.src = 'data:image/svg+xml;base64,' + base64;
+            img.onload = function() {
+                const canvas = document.createElement('canvas');
+                canvas.width = 100;
+                canvas.height = 100;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0);
+                callback(canvas.toDataURL('image/png'));
+            };
+        }
+
+        function setRandomAvatar() {
+            const randomIndex = Math.floor(Math.random() * plantAvatars.length);
+            const svgString = plantAvatars[randomIndex];
+            svgToPngDataUrl(svgString, function(pngDataUrl) {
+                document.getElementById('avatarImg').src = pngDataUrl;
+            });
+        }
+
+        setRandomAvatar();
+
+        // 图片处理逻辑
+        function handleImageUpload(input, imgId) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const img = document.getElementById(imgId);
+                    img.src = e.target.result;
+                    img.classList.remove('h-8', 'sm:h-10');
+                    img.style.maxHeight = "48px";
+                    img.style.width = "auto";
+                };
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        function handleMainImageUpload(input) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const img = document.getElementById('mainImg');
+                    const placeholder = document.getElementById('mainImgPlaceholder');
+                    const container = img.parentElement;
+                    img.src = e.target.result;
+                    img.classList.remove('hidden');
+                    placeholder.classList.add('hidden');
+                    container.classList.remove('border-2', 'border-dashed', 'border-white/30', 'min-h-[200px]', 'sm:min-h-[220px]');
+                    container.style.height = 'auto';
+                };
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        function handleAvatarUpload(input) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    document.getElementById('avatarImg').src = e.target.result;
+                };
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        function closeModal() {
+            document.getElementById('resultModal').style.display = 'none';
+        }
+
+        function downloadCard() {
+            const element = document.getElementById("capture-area");
+            const btn = document.querySelector('button[onclick="downloadCard()"]');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '正在生成...';
+            btn.disabled = true;
+
+            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            const scale = isMobile ? 2 : 3;
+
+            html2canvas(element, {
+                scale: scale,
+                useCORS: true,
+                backgroundColor: null,
+                logging: false,
+                allowTaint: true,
+                windowWidth: element.scrollWidth,
+                windowHeight: element.scrollHeight,
+                // 忽略切换按钮
+                ignoreElements: (element) => element.hasAttribute('data-html2canvas-ignore')
+            }).then(canvas => {
+                const imgData = canvas.toDataURL('image/jpeg', 0.95);
+                if (isMobile) {
+                    const resultImg = document.getElementById('resultImg');
+                    resultImg.src = imgData;
+                    document.getElementById('resultModal').style.display = 'flex';
+                } else {
+                    const link = document.createElement('a');
+                    link.download = '教育卡片_' + Date.now() + '.jpg';
+                    link.href = imgData;
+                    link.click();
+                }
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }).catch(err => {
+                console.error("Error:", err);
+                alert("生成出错，请重试");
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            });
+        }
+    </script>
+</body>
+</html>
