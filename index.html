@@ -268,8 +268,11 @@
             </button>
         </div>
 
-        <!-- 清除工具 -->
+        <!-- 操作与清除工具 -->
         <div class="flex gap-2 pt-1">
+            <button onclick="undoLastAction()" class="flex-1 border border-gray-300 rounded-lg py-2 text-xs font-bold text-gray-700 flex items-center justify-center gap-1 hover:bg-gray-50 toolbar-btn">
+                ↩️ 撤销
+            </button>
             <button onclick="clearStickers()" class="flex-1 border border-gray-300 rounded-lg py-2 text-xs font-bold text-gray-600 flex items-center justify-center gap-1 hover:bg-gray-50 toolbar-btn">
                 🧹 清贴纸
             </button>
@@ -465,6 +468,7 @@
         const annotationLayer = document.getElementById('annotation-layer');
         let isDrawingMode = false;
         let drawingType = 'rect'; // 'rect' or 'explosion'
+        let actionHistory = []; // 历史记录栈
 
         // 点击空白处取消选中所有贴纸
         function deselectAllStickers() {
@@ -488,11 +492,13 @@
             const moveHandle = document.createElement('div');
             moveHandle.className = 'control-handle move-handle';
             moveHandle.innerText = '✋';
+            moveHandle.setAttribute('data-html2canvas-ignore', 'true'); // 关键：截图时忽略
             
             // 缩放把手 (箭头)
             const resizeHandle = document.createElement('div');
             resizeHandle.className = 'control-handle resize-handle';
             resizeHandle.innerText = '↘️';
+            resizeHandle.setAttribute('data-html2canvas-ignore', 'true'); // 关键：截图时忽略
 
             // 选中逻辑
             container.addEventListener('click', function(e) {
@@ -505,6 +511,7 @@
             container.addEventListener('dblclick', function(e) {
                 e.stopPropagation();
                 annotationLayer.removeChild(this);
+                // 从历史中移除（可选，或者让撤销跳过）
             });
 
             // 绑定事件
@@ -515,6 +522,9 @@
             container.appendChild(moveHandle);
             container.appendChild(resizeHandle);
             annotationLayer.appendChild(container);
+            
+            // 记录历史
+            actionHistory.push(container);
 
             // 确保其他取消选中
             deselectAllStickers();
@@ -699,6 +709,15 @@
         }
 
         function stopBox() {
+            if (isDrawing && currentBox) {
+                // 只有当宽高足够大时才保留并记入历史
+                if (currentBox.offsetWidth > 5 || currentBox.offsetHeight > 5) {
+                    actionHistory.push(currentBox);
+                } else if (annotationLayer.contains(currentBox)) {
+                    // 移除太小的误触框
+                    annotationLayer.removeChild(currentBox);
+                }
+            }
             isDrawing = false;
             currentBox = null;
         }
@@ -711,15 +730,33 @@
         drawingOverlay.addEventListener('touchmove', drawBox, {passive: false});
         drawingOverlay.addEventListener('touchend', stopBox);
 
+        // 撤销功能
+        function undoLastAction() {
+            if (actionHistory.length === 0) return;
+            
+            const lastItem = actionHistory.pop();
+            
+            // 检查元素是否还在画布上（可能已经被双击删除了）
+            if (lastItem && annotationLayer.contains(lastItem)) {
+                annotationLayer.removeChild(lastItem);
+            } else {
+                // 如果已经被删除了，继续撤销上一个
+                undoLastAction();
+            }
+        }
+
         // 分类清空
         function clearStickers() {
             const stickers = document.querySelectorAll('.sticker-container');
             stickers.forEach(el => annotationLayer.removeChild(el));
+            // 从历史中清理（简单起见，撤销时若元素不存在会自动跳过）
+            actionHistory = actionHistory.filter(el => !el.classList.contains('sticker-container'));
         }
 
         function clearBoxes() {
             const boxes = document.querySelectorAll('.red-box, .explosion-box');
             boxes.forEach(el => annotationLayer.removeChild(el));
+            actionHistory = actionHistory.filter(el => !el.classList.contains('red-box') && !el.classList.contains('explosion-box'));
         }
 
         // --- 3. 生成图片 ---
