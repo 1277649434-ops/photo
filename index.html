@@ -20,7 +20,7 @@
             font-family: 'Microsoft YaHei', sans-serif;
             -webkit-tap-highlight-color: transparent;
             overscroll-behavior: none;
-            user-select: none; /* 全局禁止选中文本，防止拖拽干扰 */
+            user-select: none;
         }
 
         /* --- 卡片基础样式 --- */
@@ -62,33 +62,30 @@
             flex: 1;
             position: relative;
             background-color: #333;
-            overflow: hidden; /* 隐藏原生滚动条，使用 transform 平移 */
+            overflow: hidden; 
             display: flex;
             align-items: center;
             justify-content: center;
-            /* 网格背景 */
             background-image: linear-gradient(45deg, #444 25%, transparent 25%), linear-gradient(-45deg, #444 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #444 75%), linear-gradient(-45deg, transparent 75%, #444 75%);
             background-size: 20px 20px;
-            cursor: grab; /* 默认手型，提示可拖动 */
+            cursor: grab;
         }
         #annotationContainer:active { cursor: grabbing; }
 
-        /* 实际操作台 (图片+贴纸) */
+        /* 实际操作台 */
         #workStage {
             position: absolute;
             box-shadow: 0 0 20px rgba(0,0,0,0.5);
             transform-origin: center center;
             left: 50%; top: 50%;
             transform: translate(-50%, -50%);
-            /* 这里的 cursor 恢复默认，避免误解 */
-            cursor: default;
         }
 
         #stageBg {
             display: block;
             pointer-events: none;
             max-width: none;
-            max-height: 60vh; /* 限制高度，防止遮挡工具栏 */
+            max-height: 60vh; 
             max-width: 90vw;
             object-fit: contain;
         }
@@ -103,22 +100,26 @@
             user-select: none;
             line-height: normal;
             box-sizing: border-box;
+            /* 关键修改：增加最小高度，防止线条类元素导致按钮重叠 */
+            min-height: 40px;
+            min-width: 40px;
+            display: flex;
+            align-items: center; /* 内容垂直居中 */
+            justify-content: center;
         }
+        
         .interactive-item:active { cursor: grabbing; }
         
-        /* 选中状态 */
         .interactive-item.selected {
             border-color: rgba(255, 255, 255, 0.9);
             background-color: rgba(255, 255, 255, 0.1);
-            z-index: 100; /* 选中时层级最高 */
+            z-index: 100; 
         }
-        /* 框图类型的容器，选中时不显示外虚线框，只依靠自身的边框 */
         .interactive-item.box-type.selected {
             border-color: transparent;
             background-color: transparent;
         }
 
-        /* 临时绘图元素 */
         .temp-drawing-shape {
             position: absolute;
             z-index: 60;
@@ -133,27 +134,25 @@
             display: none; 
             align-items: center; justify-content: center;
             font-size: 14px; box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-            /* 关键：把手层级必须高于绘图层(50)，确保在绘图模式下也能点击把手退出绘图 */
-            z-index: 110; 
-            cursor: pointer; line-height: 24px;
+            z-index: 110; cursor: pointer; line-height: 24px;
         }
         
         .interactive-item.selected .handle { display: flex; }
 
-        /* 5个控制角 */
+        /* 按钮位置微调，考虑了容器可能存在的 padding 或 border */
         .handle-del { top: -14px; left: -14px; color: #ef4444; border: 2px solid #ef4444; }
         .handle-copy { top: -14px; right: -14px; color: #3b82f6; border: 2px solid #3b82f6; }
         .handle-resize { bottom: -14px; right: -14px; color: #22c55e; border: 2px solid #22c55e; cursor: nwse-resize; }
         .handle-move { bottom: -14px; left: -14px; color: #a855f7; border: 2px solid #a855f7; cursor: move; }
-        .handle-rotate { top: -35px; left: 50%; margin-left: -14px; color: #f59e0b; border: 2px solid #f59e0b; cursor: grab; }
+        .handle-rotate { top: -40px; left: 50%; margin-left: -14px; color: #f59e0b; border: 2px solid #f59e0b; cursor: grab; }
 
         /* 内容容器 */
         .item-content {
-            width: 100%; height: 100%;
-            pointer-events: none; /* 内容本身不响应鼠标，由父级响应拖拽 */
+            /* 内容宽高由 JS 动态控制，或者 100% */
+            /* 对于线条，height 由 border-bottom 决定，但在 flex 容器中居中 */
+            pointer-events: none; 
             display: flex; align-items: center; justify-content: center;
         }
-        /* 文本特殊处理：允许点击聚焦 */
         .interactive-item[data-type="text"] .item-content {
             pointer-events: auto; width: auto; height: auto; min-width: 50px;
         }
@@ -162,34 +161,31 @@
         .custom-input-text {
             font-family: 'Microsoft YaHei', sans-serif;
             font-weight: bold; font-size: 32px; white-space: nowrap;
-            /* 描边大幅加粗 */
-            -webkit-text-stroke: 6px white; 
-            paint-order: stroke fill;
+            -webkit-text-stroke: 6px white; paint-order: stroke fill;
             text-shadow: 0 2px 6px rgba(0,0,0,0.4);
             outline: none; padding: 4px; cursor: text; line-height: 1.2;
         }
 
         .sticker-text { font-size: 40px; line-height: 1; white-space: nowrap; }
-        
+
         .shape-rect {
-            width: 100%; height: 100%;
+            width: 100px; height: 100px; /* 默认 */
             border: 4px solid; border-radius: 12px; box-sizing: border-box;
         }
-        .shape-fill-rect { width: 100%; height: 100%; border-radius: 12px; }
         
+        .shape-fill-rect { width: 100px; height: 100px; border-radius: 12px; }
+
         .shape-exp {
-            width: 100%; height: 100%;
+            width: 100px; height: 100px;
             background-size: 100% 100%; background-repeat: no-repeat;
         }
-        
+
         .shape-line {
-            width: 100%; height: 100%;
+            width: 100px; height: 0; /* 高度由 border 决定 */
             border-bottom: 6px solid; 
-            /* 线条垂直居中 */
-            display: flex; align-items: center;
+            box-sizing: border-box; 
         }
 
-        /* 绘图覆盖层 */
         #drawOverlay {
             position: absolute; inset: 0; z-index: 50; cursor: crosshair; display: none;
         }
@@ -228,7 +224,7 @@
     <!-- 顶部提示 -->
     <div class="mb-4 text-center text-gray-600 max-w-lg">
         <h1 class="text-2xl font-bold mb-1 text-gray-800">教育卡片生成器</h1>
-        <p class="text-xs text-gray-500">点击图片进入编辑 | 电脑：滚轮缩放/拖拽移动 | 手机：双指缩放/单指移动</p>
+        <p class="text-xs text-gray-500">点击图片进入编辑 | 任意剪裁 + 涂鸦合成</p>
     </div>
 
     <!-- 卡片主体 -->
@@ -238,7 +234,7 @@
         <div class="content-layer flex flex-col h-full z-10 relative">
             <div class="glass-panel flex flex-col p-4 sm:p-5 mb-5 sm:mb-6">
                 
-                <!-- 右下角装饰 SVG -->
+                <!-- 装饰 -->
                 <div class="decor-icon">
                     <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
                     <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2v7.527a2 2 0 0 1-.211.896L4.72 20.55a1 1 0 0 0 .9 1.45h12.76a1 1 0 0 0 .9-1.45l-5.069-10.127A2 2 0 0 1 14 9.527V2"/><path d="M8.5 2h7"/><path d="M7 16h10"/></svg>
@@ -250,7 +246,7 @@
                         <img id="logoImg" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAI4AAAAkCAYAAABfegKAAAAvkElEQVR4nOy8B3QU1/0/+rkzs71JWnUkIYmOBKb3IsBgiikuwiU2bgQS2z8ndmI7jmNbTmI7jhPHDTCOGy7YBlONMQYCooNAgECNpopWvW7fnZn7zr27KwTGSV7+ee+dd87vwhztzNy55fv9fOu9MwL+u4Xk5eVJlFJ2kPC12C++Wv/rDRs2LAegjdT7L/f7v+X/J4UBRMjNzRUZUFavXq3Zvn27jlLaE4imJ3/73IPny8vPUqrSQCBA13399W/YDUqp+P/d0P+3/L9a1q1bJ544cULDmH4NQHoWMzBg6Mcff/JM0enTp4I+Lw1SSo9UOFwBldKikye3IgSc/6amI//B8X/Sz/+dcfyn/fw7ffy3yv8TbfIiUEo111wzAOgNYPTSRx5f+OGHnz66e/fud8qKiw81NjR0UEo5YI7WNAWf2nFKvnfzUdmnUnr00KFt+PeAQxhQe5i77sI0HRtP2BxyEP8HB3tOwzTlv2JUD2Eh4YMLUOS5vXv3Rkzzj/XD7mnYfK43F3adae5wP1KkD/YM0+bsXo/73WNlda7X5r9betAxMjch3Of/uVAzovQ4HfT1xo2PHz9+fMOlC+dPO2pqGpob6r1el1NlQFEopQFKaU2Hh35TXO1/fHuhPPXLI/SmrwroU9+dDrJ7Bw8c2IUrwPkxUEjXXrvebwB6AEYAFgDWaw7bjxzWcH32nBAeC7mmXQ7aa+ZuAhAVPoyRiz0YqesxDkv4MIUFTB+p35PRP8IgQ3ic5h9hCes/DkBCpN2SkhJtGHD8iLQbFryIcIk9heyauVnC7VojF8Ig7Qn+yCFF5iD9yAA5ogkhMtMsO3fv/t3QrMG5CYlJbFJo9clwevxo9wdwqdlL6ypalapOj1rS5kGJ2y9JgqBN1koYZNTBp1AolIICUFU5orlohEl5eXlk6tSpQk5OjkoIUfPy8lRGnIfuf2jcBx9/cCwvL68pzCDC7i9/cPkNS3++9PmEhLgYWVYEgGpUdq+biQJUqN2gZFRUr/ymrA1RFIOBgOwtKzu3lxDyNgAPk+r169crbGyLFy9WIkTdsWPHq1lZWcNlWRbYLCRJUouLSw7OnTPneUKId8XbK3499+a5t2i1GqqqVCIk1AfrlgiCTEBoS0tr+3ffbX998eLFh8L+nRquk/aLX/wq7as134off/nW9L59M6erVNVoNVq1oaGp/Olf/W69JGk7/rFvm7hjx467R44cMU6WZUkQBMHvC3R8v/P732VlZeVfh3eMVsqP8TZMkszCwsKX7PaY9EAgIGi0Wupxe+q3bNny7KhRo0r/ybMhxv0T0CjTZi+cu+pvf/powMCB8S3eAPLP18nHGjpJtTtAOhUKl6oSv8LFhFglAdEaCTqR8EYVytBBEVCAZKMovzx7mHT84IH8SZOnTAtrlQjxIoURdMDnn39+5+jRo+7t27dveklJ6ckhQ4bMB+Bg6Gf1Dx06tGXChAkL5KACQgSGphAKKb3OrMg110Njo5RCEAiIAJSVle0fPHjw7QCamTQtXrwYH3/88ePDhw+fEwwGk0aOHDmIPRoMhPig0YaURmFh4RlZlp39+vWbGBMTw+8LQmg8hEToyIRFhaQR0NLS4tq6deuChx56aC+7t3bt2kUzZsz4KD4+Ts9AKUkaHnHKwVB93mcwwEDub2/vEOx2O9NqcHZ6QakKa5QJNTU1tadPn34vLi5OI8sq8fu9yp49e9a/8sorpW+//facKZOm3Go06hFUFI2iKJKqqkxraIPBYECv14/Mzs7ux4inKJSPWxCBqqqq2gaH45DBZNISIgYEAQrDgl6nD/gDflJQULjlgQeWfPMD4DA1Nm3aNPmJJ5+87anHn/gyISlR2nS2KrC6vEHyUyLESiL0AoFIACHMCMZ+xoSuoAKzRuQKJahSiAKBX6ZI1Avyq3NHSMcPHNg+ccqUeT26Y2p/yPur358wdPjQWUlJiVNSUlKNzi4PPB4vtcfamEZa8NJLL30TBrPmbMnZQ30zBtywZPafZVWBqNWJoGoIdkQFoSqoyjjGZI7/5TgJMZJVExiBCKis0kd/P0edMGWYbvfu3Z/OnDlzCavz8MMP3/7qq39abzZb4HH7GQjkvTsLsOKZPSQmxYjkPhb1qT/eSWw2qxTwB6HTS2r+nuPKr27aINxwUzx1nHXC36xAihGQlGVCZ6cfucuHB+/76QLD2bNn9wwdOvRGNpQzZ85sGjJkyKIzp89RRVaJKIrKoX1n1O8/LxP6j7bT+YvHwWQySj6PHzeM7A+T2SD/6YVP8MzvT5Bf/3Qg/vjWQ6pOr7vW90RlZWV5ZmbmvTU1NdtSU1MT/pnWUBU1+P7KLeT7z8uJ1giat+JOOmBQxg/a7FkcDofn9ddfH32VqcrJyeGgATD9l48++gUDzWv7zsqfOZza4SY9REKgqBShf4CsUjDd3BqUMSnehH52Ex4+VYdJZh2sEuH1iUCggSDIsopgMJj+8p9eWz78huw+0fboPrEx9uyk5MRko8HMbXp9XQu2rN+rvPrkDvKnD+/AhKlDAtu27PD3GKLicbm5vQ34VSIHIah+CqIRoDNqmBsPpokCLoVLPZMiNayAKAhEgcLrU2GI0vD7S6Z+qhxtTEe/fn0XAhgK4EzfzL69GGi+3XIg8NYLu6XskYlSW6MHjeV+dJUrKNvdLhb94w30GRWjVpa2Yulzk4V4u10QoEVQAWb+tD8sUQYEfEGcPVYPWQG++PMpMmfBJERF2RLCfoyHEMJ9pf+Z/Ymyv7FKBEziBMSLGbNsOH+sHVNWreZxCdCAc6V/Q0KSXTq2uxo/mdULwaCC997aLMoydy9VSRTQ3NSJe386S8jol5L22GO/XJCQECeVFV9SXvzFWgwakcz5xmQp4Fc4jZjQa/WSxlHVCWdzANSv4uUnv0Zyuo0G/DJl2keRKWRZYVqWOqo78Os/LFKyb+hjHDVqbN+ewCH5+fkMNNbCwsI3UtPSNO8eLQtubHBrxlsM8MoqApwZVzwUyrUOEKCARSNgYXY6EsxG9ePiGlLk9LHacCkEU6J1TItj6vScwVOnT3+Xo12l6Gh3oqaiGRUXT8tH958nBz+uFDSJguivJkhMikFXZ6dSVFzoQsjBUV588cUb09J6DzAYtcr7Wx8VWBsGow67thfggxcPgmgoHvjNRMycOxZ+f4Cbo25DRcHP/f4g3ntjK8pONiHFbBQddc3y0OH9rN999/0zc+bcdBdVSQAhkyHVFXmFGHsXkvtYsfztPiGCiwL/W3rSIVSc8cHrCUKMJ7CaNFBkFT95aBZ6pcbzLr/ZuA9v/HI30obYwHQzM60Rp7yzs5MBCM+vmS+4nD7C5nG6oAKHt1UiY1g0vn1+CvR6HensdCI2PgqnCsux+XAdFo5IweWjzfi8qwomEKIDEbPH2bDjaCtuvWsqA0TQ7XQbFIWbJVGj1dD6CidpqHLD36UiLtOAqEQdAj6FC5Q1So9hM018vAxU7c0eIoiEUEVFTIIFeqMGGklEU6MLQVlm2GPyK3YDZ/Xq1dLy5cuDz7/4xxkDB/Qfcqa+XX7jYptmis0It6yGJ34FZbSHhxtQVUQbtFAUGaNSooXhaXFo8gQDdW1dotcfEBEIYP/uAgS8Aepy+tRGRyetrWglFWWt5PJ+NxEgSAljjEibEAUD0xz6VmoyG0h7RwdjYmPY2aMDBw6cl5iYqD9+tDjQ1NQhiqIASSOi6lIDdDYRoghUXmpEQUEJl5Rr7TDTOsx8+X0KVBmIH2bE3l0nhb790zB48ICbANglncCnJQiE2qP06HQEsHjZICzMnQKf1w9RFKEoKj5YsRUr11ZBo5GYN4ygm9lrCtIjVoq2W+GqlaFkRXQ0ZX4MmTdv3qCUlBSm4TDjpnHdw5REEU+/eAxv3TEQM2aPwY5vD6OhoZ3fu2F4f1RefI4D1x8IwKDXQ+Vz8WPt3/ei4qgTeoMWsqKQPfkHatra2oODh/TFii8fwRuvbEBjrQfZN8biN3+4E1HRViiMPiRkx7sjFT6SkF8oSiLOFp3H5domaDQiHnhkNk1IiiU1NTU4fLigrRs4I0eO5H/jYu0DDEYjyi7W0CSNyCMiEpETwmnDCRVxOtk9j0oRbzHSrs4u8sY7K+tmTZ9q6JPZJ6avQUJ0rzh0trlx10/+juYihVhjdKI+WoQ5UQuzTY+htxj5wJm0MsfQ1emDPUZPzRYzaa5ydDLghB1nWaPR+Vjl3btO4LfP78Po1AQ01/owaEQ04hLMzJ1B/oYLWPX8cWYew8zqoSLD0xg0MQ62aC2UILDu3VNYmDuZTUwKhaZit8Pu7lDQZ3I0tm84iUOHz0JRGKCYbwB4mhSMhoEzT0BIszHGHzlwFvY4K2fKmcJKJA43I+iXQ3Kqqsx/UObNnje1d+/etgvnqtUTR8sFnU7DAVd6ugaLRiWg8XIHPn73W6x75xRcTQoGDcpAanos8vcdx+CBfTF+0jA0NjbCZrPB75NRfbEV8RlGGhVtIQ31DbrKyvJNmzdvHvnII4/cV1VRL+/480VN2hQrtJKEs6cvQlbUK0JFQ5bjipAR7nxrtRrk7zyD/G8q0FHmwdt771ESkmKl3bv/sfvtt/92sCdwOHWjbbZkplI7vAHCY0t6rdRG0HkFPMxkWPU6lRCIG7d9+9LvX3juH+k3jJlWVVQw4vyFc/fbzLEa4tJhbG40UVSVgyRyeN0K12bsP3Na/W4FcSkmajYb4XZ7LgNwFRYWcofN4+rysnqPPHY7fv7wrfwZvUGH7ZsPY/WzB/jofvbKFMyeP55LIhGEbmLwsdOQ5lyz+jvs/PwCqEzx4juLkJ6RjOLiYg+AFiCUnCRh9UpVCp1egyibGUqQcuSJggC5y4UgwgwggAIVepOE++/aDhc8fCxTTPHImB4NZ5OHizNVVR45uH0+C3us9GwFvfv+FZiZMALuRgXWARJcmgA2f34OJa1+zMuJxaWLXThecAYmyxgs/ek2PLgoG8NGDEJlZRUyMtJRdakJB7fUY/aSNBqXYCelpQ4HgIZZs2bxvMz3O44R+wgtLHEaXLrYil3LNkFEyMdgc0MojrgSQfBbAoKygv43RCEx3YqmUhUfrPoHGT95OHJyJjOtKUnXYiIpKYF74o0eHzEIYoiMkRTJNSDiWo21QgCbUUt83k4U17XUAThfVVRwHsAkq8X6kNflV2ovOcWkwSYEfUooLA43yZhLwqErU8M+l4LYJDMVJYKurq5aVsfpdPKe71myZMeg7KwnRgwbYdzx7UEaDKpEI0koL74Ma5IWerOE6oomHNp/GsGA3AM44eEz7UCA5oZOxPfV43KhE2npSdTj9eCzz9auYSANG3FOTKMk4vJpJx5fcSPmLpwYGiQLEGQVf3vpC+xALURB5I4mm4XPHcTqj2YiOobjAqVnqnFwSxV0FpE/S1ikwHNnCnf4J+UMx4ljr2DT2sM4f7IVWWMTcPuSSdwcchNCQ86pPTaK+Tt44OZsNJx3o+JiDcaNG8tN5uYvD3L4Zo3oRSWJhf2thQCYoGWyPu68ewa5/Y6QEmU+niSJPaT/GubTq4jF/1w6fxnenwWg0+uIHJQRExM7DNAO+AFwLBYLB06TJ0j0Yljj0IhLF/4dSsdBUJmkAQZJoDaDjnS0uCgcF5siDd511z1ZOp1ebKhrCjA/RpQEyOyhHra0Rw4dokjgaZYRnxzFL/m9/soeTGc8LQBFudPpGzVn/kcKoBOHIwopw4yI6WVA9YEufLbzCJOzsHW7amrdv2MRg4GCAQfVKur1+oWO9g7/q69+sSlE3O7niE9WkD7Uin07i1FT0wQ5GOR5HGeHD6WnG3ARTsTEWCBpJLih8shlxuzRSEi08wbMVgPWPVeCAbOjQmQjnFy6J598cvOYMWMenzJlSrrb5aWlBY3EbNWjo92Ds0UVYGE+AyRjMnPEbXYTps0YhayxSdi77RQKDpUha2g/1FY5sHtDOeKhxfDR/fkky8rOMQJ4i4uLj/fr1++Gs6cq1D3bz4qxSRa0NDjhcQY4nVWFIoRjXBVAhNhLuRVhjnFiio37nbfePYVqdRIKT5ZVA4E6qQf22DOxep0upTOooC2oQkOEsAoj3d4wa5Ryu0i5vyODwKIhMEgiafD6OgB0RcaR2is5VqfTobWlC1IYeaHUStgR62EKKSVcyj3uIOISQ9nvhqaGhm4uEtYbNHq9XjSb9di07ifoavci/9tzvA2fK4Blb03A7xKj+aSvRH/0KtgQrjFC4brb7UNyahxRVJ+6+NYx4rqNVdzBjhTGZa1OxOXKdlxuaQFUgSfLRAgwaDVY+foMjJ88FKeOl0MPwhN3ne1OmC1GroXcLi/0CSKo0pM1nBA1iqKUA0hf8+539OSRDjJxWhyopOKbLccRl2BEZaELrUf9OAQXbp0Vh7k3T8KEqdlYh2L8Y2MJZswZhUMHzqDugBcDFtrooOxMsbq6uuvRRx/ewzoymSycdjVVTdj89yr0yTDipgf7Iy0zHoFAMAQaeoUmPZUCM2GSVkRLQye2vluMigtulBTX0dWfPIHo6GjmrXdy4OTl5ZFwFjdBr9MldLh8HDgJWuEKrMItRzxHEgZAUKWI00hUFAXidDmZM+uO1E5ISojnwGnuJDpcUZGEJ/+v1QYq/x1opYix2+D3+9DU1NSMUH6JhjPHvn37DpzunZY2fFHudLp9y0Fc3NqBPvOjuJlKSY2FxWbiwIhkiUOKjV4lH5SGMqVmiwEGgw5uj1/VGIw8DFeUCDFBDRDgKHNhad4kzL9tMo+qmGlkJlVRFW4+WDvBoAItRB59vPPqN2CSyXp3dfiRMsQCnycYyimp3PArdnPSoIEDB05vbenkkca9vxiACdMHYvqsMdxM1TuasfLPW3GmoxEP9I/BU6/cyvscPCQT2fNj0N7kx+svbIDPL8MDGbNvH6ZYrCZpb/6eQwDOgjshAp+JwajHkFE2aPQCxk8djMFDMuD1+nl75AcmioaFmXJHv7PThfIiB+zpenjqZeL3BRGfEM+k2sSBU1JSEoFGks1qMTR5A7RLVkmynkC+yju+NkIhCFAVsXoN1QiAy+1maHRFlgcSEhLiBEHgwNHHSGEXIRyadY+VXgVOCgUx9ijS0dmJioqaukit9957j6/xPPzwz767/fZbHujs8Kl/fvh79J5t42pXkYHcGV+iEf4eSL/+wnc/6Ll6P4Q6lJc8j7hEM42KirpqbYf50SxICHSp3DlmYTc7mhpbUVXp4GYkI7MXomNsUFXmGlMecTkuuBD0KjxKMlg10OjEK1MMW4bpcybZBUHQ2mNteO7VB64aZEN9M95+dTOKdzVj9tKBuGfpLEYP7s/Yoiz46VOz8OKyzWhr9sPnljF1aS/Mvnk86urqsHDhgrfCipIxX43Qt+OCH/1mRON3d32Nyjo3RP4vpPp4IrdbbCmfhxg+j4MWA2ZFh7SsEEriycGg1O0cZ2VlkfXr1+Oepcvjomw28WKTW/WTK4ETN0/hPA65ihkUAZXCrtfylbuWtjamcVyRMcXYY7ixb27oIsYEiZuQSPj3w8Ilknl1NCraJAQDgfY1az7g6nb9+vVk+fLlQQD6Q4cOPREXF48//e4TUfAI0OlFeF1BSFoBT/5+OLR6KWS/r9MHmwvzsy6VNqGz1Q9pD3geiPmhgiBECN6NaoZvQUugKFcwVe9owdjxq/l49+5egpwZoyHLKo9U/H4FL6y4Ham9E3n/+bsL8eYT+eg1yBh2jrlWp6OHj6ZR0VEoOXsR274+TG0xZuL3BaDVSjh5sBr1Fz3QmAR43T58+ckupGbEYf6iHN6/Pc4GY5QEq12PzsYuDM5OYYAStHqJHjl65FeffvJp68qVK49HnHyFKjAkimi+7ELep7dgUFZGOHAgV5yaHjyIGHYm8MzXevtPm3D+RAtscfowDbnWFDhwkpKSeCdDB2cnao0mtLnbVZHwaLxbasl1PHH20x9O/rHS1trOTIs/7NXrTUZTHLve0uiCzhxCIYfgdZDDPH6mNayZWsoI4fZ2Mieb+Uxob2/nKv7119+8a+zYMeOOHz3r3/BhsW749CR43UHIMkVULw2W/s98LpURU3S9wgTxvbe2YPOKs4CG8OEIAlElKSShkhBaVSYC09eUxz9M07Didnv5rB+6LYMz93J1S5gOBIKGcE3DtIjOIEKv1yMqxgpnbRAkO5x8JBycisFi0Gg1GgQCstLg6BSZqWOtNNU60dEYgC1Bh/7DYmE061BxrhGJvaLhcXtxcN8pfPiXfFhidCjb1oKogVrs2VSGznaX8JOHZtFxY8fdaI+xD165cmW6IAgypysLrb0q7L31KCw4j4amFgQCCo8ur14DvmLawwDhwOls80FrFPlibagaR0Jo70t0dDSv3rtXYi/2t9HthYm1oIYweMU3IXxBUw3rOIZaH6WINfKFWzQ2NkUiKvZElF6vi/V6Auhs9hKtQbxiqn4QD4bWtJgkxPYzUYvFhLb2huaw9kJ9fX04RFbTRFFC/4EZuu+KnkFrSwdee2YTd4yJKnCnz+8PdmdFrwIMMyXcH5HR2tQFc7wW/lpfSAsCVBQN/IeoEUOaB4TIMqWZo8zkdEElHJdbcaawFhUnOhDTSwetJKCivBGyLPP8kxJUIWpDzjPXHhotFwathoXrArccoigyral8/PHHXXPnzsXwkQPFIav6UUEghEn4ubIqPPXgWrjrfbj5j2MxckxWtxB89sG3eGXpfgzJiUHJt214/MMpqK1swud/KIUoOLBp9V/Jh7t/Jmf2TU0GkB0BDiEi5yPTrC1NXVCEIOSAqhKB0B9oAm6iVcZiwWLRcz+HKixAELgGCi3bcPCrVy1yRkVZ01UeigeohW+PuLINIRRY0XDWGN2ag4Wg0QYtR1n5+fON4aZY47E6nd7mcrlpe4OPWOz6CJOuaDESTkKREHH8PgW9s208H9Ha2tYKwBMOwzkRHn/88Q9jY2NzMjMyhmX0yTSnpCZKRCQ88eZzyfjri19zp49HMT9QOJRP3ucNorXexZ3pBp8Ptigz81GCf/nLy1ykZFlWImNrgh9JLX6seukMauHGWNgw6ieJCAYpB0j1pVa4nB6ukZhJY+BnQIqKSuDrcMf2l8I+XAefV4Zep0VLWztXLYWFhSdXrVr1sz59+jx82223DbFabbSxvoVUXqyDySyi+qiPR5mtrS3qvn0HhFtvvQXOLh/OI4gpCTq68ujdyuix2cy80YSU78mm1afECw0BeNx+kTntTNsrikIjGtYYr0F7ow9Pv3orBmZlcBn6FxtFVY/bK1yuaUTxYQeqT/iQOcnGnf4uRxcDf4ABh+Tm5jLGmMwGQ7JMAYcnAJ0ocEcJPfJ/kQxvKDkVui6DwqwVibvLidMXqmtwJXSONRgMFmeXGx3lAURPM3KpxFVrXqFcAk/MiYCnPYjkXlE8udPc2tIariSEgcieqr333ntnAxhcUFCwZvCgmCHFG5tUQBRMKRLOXG6BFyzCEcDimiCnELj/IUPl52ZoYOktoqvajze2L1TiE6OFffv2MU3J/SmbLUYOAwipmVoyYV6aes/jY9G3f5oQG2eD1WbC5g178cr9+9GOIJ55pR1MqA8EWjH2kMwdZVbeeX09nvvjKUwfYMP9v54q26It4vHCY20AvE1NTeb4+PjVq1a9F4yLi/1g+9YDyryFq8Xx6A03ZGTNisKg7D5qTU2FUFlZyYgm6Iwi1qyZSRfdNg1Gk17at28/+vTJxP3L5iPnxhHK+6u2CXypILStR9JqtZx5Pq8P1Se7OF2CQZl2dnWSdV+tL9FoNB2UcH8+SCmVBEEUVVX1G/T61DvuXJxRU1WvDsr+szBnYByMiSKWPzGHMoe/oKCgjFkCKbKzDoAl1m6PZryt8wYEgyByUPTcacUjBxpKrTGJ1AkEMaIAo1ZCc0sLLpw8HB3e+thpQZo5KspG6i93Kn63KjKnlAHnagty5YRpCk+FwlfFGZBamlrq2fX8/HzSjTJApJQGCCGnCCEuk1mHNeU/oxpRghK2wRqNhjNPVhQeOkeyr6IgQBBFnsRj16LtVhoVbdEUFRW5nn322d8yF4097/f7/YGAHzkzRiLn1EhqtZoFv98Pt9tFG5saiS3aiIW3TcOoMYN46Nw7IwXJKQkoL/0VF4KkXnG8v588eBPufWiOYrWYaLTdqjt37px35syZTzMhiI+P5ya4T5/0CYwG/Qel01OFz0Gn1fJ59M5Ilg0GSSooKPg8OTmJAfm+n9w3VxElQWxoqA+8s+LLHU8//dSvAYzYvHnLSzNnzuiT98pSZmbQ1NTEkFvR0dExlvVx613TcOPc0VBUhaalJdHauhp52bKf3gbg3DVaJuJDJKSmpe6bMGHCgJrqF5SAPygmJsVRvUEr7d27t/ruu+9+gSMzNzeXR1QArBabLcblD6IhqJD+RsaMkFMshTdusbaDlMKrqvApKtoDFC5FhUWvEWJtvVBVVfV7hSqPXDp/6eCXX643GY1GuFz1xM8AJ/bkf48tcuH1Bp4P8SiIirFQWQ6y8LLmOipUyc/PZ2CXP/vss+MpKb3GZ2QmKa2tLaLJbIMkSai77IDFaoHNyrdlcEDabHFwu93weDxITI4Ha7+trZVWVF4ke/bsKTl06NCuvLw8IS8vT33wwfuaBg7sT8ePH0fPnT8nfP/92dLS0lKLyWhKFUSBZmSkk6lTczBgUCa6ujpx5sxpxMXFIaNPLw5a1kcbt7J+ZsbFljZn8NixwwVvr1ix/XTh6YEKlHmqqmoEQSgvKiqKczqd6NsvjSfM2LMOhwMer5MWF59h594jR464J06cALvdLnz40afehx9++JO1a7+qOH369D3Mjzl16vThRx9+rCn3ztuzp0yeYrl0qVJ84403Jtx8880V5eXlGDBggBgVbeYgZ/JZVVnVtWXLlvsGDhwcLCo6dXrx4sWF27Z9Nzs1NXmw3++XOjpc2ydOnLi6qKjo9aFDh1ImNLW1NfTSpUrS2NhQsWnTJustt9wCKTo6mpuCzLE58YIo2Do8PtWlUqJlbjFh06doCShok2W+EtxLJyLVoFXtepGatRrBJII01zbCBQFGi9EUb7f2yUzP7DN2/FiYTCbKPH4p4isxf0YgP4A5UxaiSOBCEEnJMZKqKv5vt3x/kd1fuXLllfRUaF8xkyjrXXfdNTY2No45xKJGowOhIl+fJHzDlgSBiBAlLScYa1+jYb8D4a2dAoxGizBkSKI8ZszosbNmzfxy5MiRtzDCFhUV/c/QoUOJqqhKeu908fPPPm+dP3++ZvTo0TyX4vG4uTZjmoHRo62tDZmZmbxNt9vDwwe7PVYoKSlpmT59+pMATrzxxhsLvv76q8cMBmNCICBDFAXuqGdlZfGNHl6vT2DjZL4S09wmk0kzatQoOmrUyKVOp5OazWYqCAKZceMMUldXtzA5OTkRNLS4PGTIEKSlpVYpiqIYjSZMmjQRAwcO+Hj06NGOtLQ06nZ7WVds7IRFRlOmTLXpdNpnGB3s9mi5tLS0ddCgQQmyrELiiU35kdLSUkdsbKysKKrE6lmtVmHy5Emq0Wic5nA49j799NM5UmQ7xYKp43rrdHpdhysQMBOidQZVVAeCSJKA8XaTMqJXspoeYyY2nUaKsRiZL8hLMBDEM4++h41/r0Aq0SHqBr0y/Y5Bys23jROt/axiU2M79BDCYd+1r+9QvsvMEq1DdVknFv26vzJi9CCx4HjB5cMF+08ilMPptpaLFy8W1q1bx877JScnDa+rbVZOnSgTFuVOx/FjZ9DV5caMmePR3taFLRvycdsdN/Is6Yo31+LmhVPRf0AGdnx7EENv6I/klHhs3ZBPZs6ZgOTkpPEA4p59+tkBmZkZt9fVNqqrV32t+V3ecvrAAw9MtljMqK6so59/+g157PElMJsM2PjVbsxbOAUzZ87EhXPV+PrzvTwL7ezy4M77ZmP4iBHIzV22aciQlOz777//JVUh+OT9rcGgT6Umqx65d88UAn5ZXLtmB2HBgNftx/DRAzBx6jg+16+/2kkmTh6uJiXHkZMnSonH5cWknJF6WVYTN6/fozQ3djBJJrn3zhTHjh2TrtPpUXiiGEcOFtFHfnG3IS4urm9nhxOb1+3hjjxPklIZd983l7S1dsqFJ8rV+QunSHa7PWHf7uPy+dJalflIoyYMlkaMHpzM+PXp+9+gV0YcZtw4DseOFTGRl8eMGRo1NGvoUGHZsmWcpYmxMRlmsxmXmjtxxBfA0Bi9+trYDGXNojHqb6YPFW8a0EsTT/xSw4VS5+7t39a98847J/ft3dslCCIMRj0dMSEO/RfFE2u8Udz6lxLtgv5vikcOFsHvUSAahVBERdC9BYxJgaQRYLLpcLGoHfF99Hjit3fIbo8L77//4UoAHeFXMbo1Tm5ubsTx9gXloNrS3EFOHbvE79XXt6LiEneL4HZ5cGzfBQSCQTi7XDi+uxprP9jNQ/GaS81wOj283rF9ZcTt8jJNxi6ot91x+4NmswU7th5RPM0qOZhfSDIyMlS73U5bmtvJmheKsXfXcXi9PpzYfxFyUEZ7aydeev4LjJ2UjVk3j8OC3Cl8ddzr8WjWr3/PNm/OvDttNhveevVLb2x8lGbh4inaKTNGaEVJlLq63KT2YhsW3p6DW++ajs8++gfOnA65HicOXITb5eUm7HJ1I9+sxgXp853UUdsm3rlklm7RnTlaSRJEg8FI2TwO7DyD5loPKT3DlbVqMOqRe89N0Om10Bs0uPPe2SwCQktTu1R2uopvKjt5vFT9+pOD0p33z9LOu22y9s0Xt5KaKocaDARwsbQef3tqOxgAO9tcqK1qJrIiw+lxaqUIY9JSU9MkjQYDYk3KhfnDad9YmyD7fSgpPoPa2trT+w8ePvbaa68eA8C8asattm+++eZ7URJmUKooQZ8iMXXHIozMqVFI7DThred2IDpRj945Vp4P0hnE8L4Uyt8KaHP4UXHSidxn+qu/eGpx0Goz6d544811f//76tfDYXhP35xpHHz11VeLzWbzrVaLVeNzOYk91trtFNusoe0MWp0WcfE2vsLMHNXbH5gEZuf37ylEau+40NYCAPZ4K5d2ndFs27Rp0+t9+/VZUFNVj5rqZumxZ2/Hyr9swuhx2YLFauJh/OqdD6C9vRPlJZXon53M22H1swenYOiwfti0bg+qqxvJ3UtmM3+LZ1gHDRnEozRHpVPK6OdB/u7jfLvHLYtncIc9OS0GsXHRfDwzZg1D9aVGDB02ADF2M2c4Y67NZuab3FgpK6ohS342GxarGc0tjaiuacewYTeQolPnkZwai1kLxmDbpkMke1g/UlFxCenpvZHcK5ZvpbVFhegjiSLMZp4JJpWX6slNt4zk7bFjwqy+pKrSQZKS45DRLxHzF0/Aru3HkJIWD4GKNLx3RxIiUcv5c+cuu1wujExLMNgUL9mwYUPFL3/11F+HjRgxef7ChTmvvfbqzwB8BOAogGbGK+b8hn0PnlmMbAySAwpMUTrozVo0VLrRdMGN8s1tOLulFSc3N6F0ayvtagjQEdOT1Y8LlgSff/lBQasTdH/96+tfP/HE4/cjHOpFQB15CezNN9/MnXfzzV/NnTv3jpgYu1hZUUf8vgAJZQwoLpwPLW01NbahpdnJk16MSRfL6jFmQjbOl9Tgi3f3Q6cLZbr9PoVUVTlgMVujFi1adI/FbLHu2VWAlsYucuRQEb1wqgknj5fxukx7tbV2YNrMUVj3UT4cNS3c7NqizThTVIva6gZMnzkazQ1ONDW1MT+G75lsbmzm9NUaRMTFx2D6TWMxedpInlPiPlKzk2eFmZYsOHoe8UnRXCV3dHh4gpOVyksNkeCCMqCdPXWRL4NE2WIwePBg7sPlf3caF8prUXCkGAe+ucTX0+Lj43hawe328aQke0bl6zGAz8fxjPiEKJw8eoHzsKPdidOHq5GYZOdzq7jQiL4DUmGxGvHywxuhNWi4n0QVSqVp06ZxKOfl5b3mcrls6ekZfR599JENALaysDoi7Yx5K1euJPn5+TSSzVQUJbxsJ0CUJOiMEjxdQTRdcqOhzAsdCLJuiVX7zkpQk3vH0OgYM4mKtsBmMwkJSbFCfGI0G4hw8NBB14p3Vv3lyy/XvhjuTows1qHHkkNcXMJYk9GIbzbmO88WVpiCKlUe/Pk8vjlq4qQRaunJGuXNV74QvJ4gve/nMzn4NBqRGiwSsVhN6txbJpJTZ84TjUbiod2td0+mG9bux97vCzF15jA1IzNFqKxy4A+vL0WM3SYMys5Qtq4/SKbOGAWLxYj21i4aFW2lcxePIru2HyMsykpNSyL3/3wG/fs7W9BvUC/i7HRTW5SZr+n0wtDgp5+uvfjss7/B48/dHlj70U7icDSSuIQYetOcCdwn8gYD+GLN92isb8fQYel05JjBPEVyz7KZwW83HSanT54nLqdXXbQ4h6ekcu+5Ufnw3a3q++9sFBjj7n1oHi7XNoAKCn3m9w8wLUhSesfjyKEi3HXPHC54KmRiizVRVVVJIOAnBpNBsdn1XOAmThlBqiob1HffXC+4XX4suGes2n9ghhDwB2lssokoskqnzRpN136cL+gNWpkQQTRbzYGewc0PSuS95mvvh6Mb/a5du3YzFD3/y78HF456mU6PeoHO7pdH//D0h8qub48EHLXNstfjp4rCX+PoLh2d7bS4uNi3efPm4l8+9svXAAzo0e4PXo3Ny8vjGe6XXnrpSUVWqMfto22tnVRVKPX7fXTt2rWtDoeDt82uBwMKIxKtra3l19Qe3cvB0ElzczOVZZkqCqWdHS4qB5XuusFgkJaWlvLzYECm1yuRdurq6vjfQECmXZ1u5mvw89LSsi4AKQAs32zdeoK/Jq2ovC9XuE6ofYW6nF7qdvv4eUVFhbp3796uUB8K7Wh38utdXV1048ZN7R6Ph587u9y8v57zYxHY5cuXQ+MLvTrD50LD99lYz54929233++njY0N4fY8lPGKlcbGxtAzPekWbq+tvY0+/dvfzossOdDw67hiUlIS+eKLL2h+fr7S41XY6xXOHPajrcWFSyfa8JsPpsk5M0ehV2q8pKiKUO9w4GxJZUNVZVV9XV3d5aam5hqHo6l+zZr3mU0pB3AG4Bt0sWzZMg0hJHidDaoMOHwczz777Cc2W9SoIUOyRqmqonQ5Xa59+QcOvP76X96cMeOm+Ut/+sCS9PQ0i8/r8x85UnDopT+8ULZh05a7LBZL0sWLFy/o9XpdSkqv3h6Pt+W1115bO3XqtJRx48bMMJkMGq/XL8myrBpNRnK59nLxHXfcsWPbtm1LYmJiEjo6OlStVqvq9Xp/WUlZc1KvJHt0dLS9paXlwsKFCzetWvXuhKyswUNFUdCrlBKfz+ff84897zHXhgn8/AULFjz33AvPTJw4frLNZjEQIsoOh0NhIXhcXBzfzcbYUlVV1fXJJ5+s2rlz55nXXnvtV6NHjx4VFRWlrT1Y69mxY+e6FSve/uqxxx6788Ybb1wUG2s3U0Dj9Xj5y3wajUY8VXhq74FD+8qXL//5gwaDwXTp0qWSiooKx4wZ0yczv+TEicIvLly44MjNzX1Yq9WaSkpKjixb9sShr776ILdPn8wUFrKXlZ0ru//+Jd9/vfHrWSnJKTc0NjbUNDW1OAf079+XCKCFJ09te/Xll3/w2vG/VcJL69qDB/d/y1D44epN/prqhgD7Xd/goJs2bb7w4osvvgVgPoC+AKKvp9V6vAD/73x1oecmm15habZdU8cSvmfvcc0W/rKGNvwyf0b4JftIiQGQHG6PPZsUXt3v2V7kemy4HXu4TUOPdmLDbaSF5xspPTVodLivhHD9uGsO7TXzif2ReZrD42H3UnuML1ISwuOItMf6TLxOuxG663vMPzJ3XXiOlvA3Btj9+Ovw5d8vkc+erFu3bkNE67W3t9PPPvu8AMDSaxjHTdDq1as1eXl52tzcXG1OTujzHf/BN1mu+tICAx5rk11nGqvn51NYf6yvyBclwp8j6f5CBavPnr3ep1QopeLIkSM117sX/jRKd72srCxtz2u48gWMngvIwo/11bOwMbJxsfrX9EPYXNj18Jyu+ykS9ny4Xvf4wvTpvt9zXOw8PE/xx66xvnqO5d/4NMyPl5ycnEjnN27cuLF2165dNXPnLngm/GkPPtEeRPhPAPKvinDlTa+rCrnO9Z7X/tn967X5Y/f+VTs/Nl/yL47r1f+xef474ybX0Ova+9cb+z9ro7uP/ysAAP//p39GkgVy5WsAAAAASUVORK5CYII=" alt="Logo">
                         <div class="absolute inset-0 bg-black/20 hidden group-hover:flex items-center justify-center text-white text-xs rounded transition-all">替换</div>
                     </div>
-                    <div class="flex space-x-1 pt-1">
+                    <div class="flex space-x-1 pt-0">
                         <span class="text-yellow-400 text-lg">🏆</span>
                         <span class="text-yellow-400 text-lg">🏆</span>
                         <span class="text-yellow-400 text-lg">🏆</span>
@@ -352,22 +348,31 @@
                     <button onclick="addSticker('😁')" class="text-2xl hover:bg-gray-700 rounded p-1">😁</button>
                 </div>
 
-                <!-- 颜色选择 -->
-                <div class="flex items-center gap-3 px-2 py-1 overflow-x-auto no-scrollbar border-b border-gray-700 pb-2">
-                    <span class="text-xs text-gray-400">颜色:</span>
-                    <div class="color-dot active" style="background: #ef4444;" onclick="setColor('#ef4444', this)"></div>
-                    <div class="color-dot" style="background: #f97316;" onclick="setColor('#f97316', this)"></div>
-                    <div class="color-dot" style="background: #eab308;" onclick="setColor('#eab308', this)"></div>
-                    <div class="color-dot" style="background: #22c55e;" onclick="setColor('#22c55e', this)"></div>
-                    <div class="color-dot" style="background: #3b82f6;" onclick="setColor('#3b82f6', this)"></div>
-                    <div class="color-dot" style="background: #a855f7;" onclick="setColor('#a855f7', this)"></div>
-                    <div class="color-dot" style="background: #4C1D95;" onclick="setColor('#4C1D95', this)"></div>
-                    <div class="color-dot" style="background: #000000;" onclick="setColor('#000000', this)"></div>
-                    <div class="color-dot" style="background: #ffffff;" onclick="setColor('#ffffff', this)"></div>
-                    <div class="color-dot" style="background: #D1D5DB;" onclick="setColor('#D1D5DB', this)"></div>
+                <!-- 颜色与粗细 -->
+                <div class="flex flex-col gap-2 px-2 py-1 border-b border-gray-700 pb-2">
+                    <!-- 颜色选择 -->
+                    <div class="flex items-center gap-3 overflow-x-auto no-scrollbar">
+                        <span class="text-xs text-gray-400 whitespace-nowrap">颜色:</span>
+                        <div class="color-dot active" style="background: #ef4444;" onclick="setColor('#ef4444', this)"></div>
+                        <div class="color-dot" style="background: #f97316;" onclick="setColor('#f97316', this)"></div>
+                        <div class="color-dot" style="background: #eab308;" onclick="setColor('#eab308', this)"></div>
+                        <div class="color-dot" style="background: #22c55e;" onclick="setColor('#22c55e', this)"></div>
+                        <div class="color-dot" style="background: #3b82f6;" onclick="setColor('#3b82f6', this)"></div>
+                        <div class="color-dot" style="background: #a855f7;" onclick="setColor('#a855f7', this)"></div>
+                        <div class="color-dot" style="background: #4C1D95;" onclick="setColor('#4C1D95', this)"></div>
+                        <div class="color-dot" style="background: #000000;" onclick="setColor('#000000', this)"></div>
+                        <div class="color-dot" style="background: #ffffff;" onclick="setColor('#ffffff', this)"></div>
+                        <div class="color-dot" style="background: #D1D5DB;" onclick="setColor('#D1D5DB', this)"></div>
+                    </div>
+                    <!-- 粗细滑块 -->
+                    <div class="flex items-center gap-2 w-full">
+                         <span class="text-xs text-gray-400 whitespace-nowrap">粗细:</span>
+                         <input type="range" id="strokeWidthSlider" min="1" max="20" value="4" class="flex-1" oninput="changeStrokeWidth(this.value)">
+                         <span id="strokeWidthVal" class="text-xs text-gray-300 w-6">4</span>
+                    </div>
                 </div>
 
-                <!-- 工具栏 (全功能) -->
+                <!-- 工具栏 -->
                 <div class="flex gap-2 px-2 overflow-x-auto pb-1">
                     <button id="btnText" onclick="addTextSticker()" class="flex-1 border border-gray-600 rounded py-1.5 px-3 text-xs text-gray-300 whitespace-nowrap">T 文本</button>
                     <button id="btnRect" onclick="setDrawingMode('rect', this)" class="flex-1 border border-gray-600 rounded py-1.5 px-3 text-xs text-gray-300 whitespace-nowrap">□ 空心</button>
@@ -380,8 +385,8 @@
             </div>
 
             <!-- 涂鸦画布 -->
-            <div id="annotationContainer">
-                <div id="workStage">
+            <div id="annotationContainer" onclick="deselectAllItems()">
+                <div id="workStage" onclick="event.stopPropagation()">
                     <img id="stageBg" class="block">
                     <div id="drawOverlay"></div> <!-- 绘图层 -->
                 </div>
@@ -406,6 +411,7 @@
         let historyStack = [];
         let drawingMode = null; 
         let drawingColor = '#ef4444'; 
+        let currentStrokeWidth = 4; 
         let stageScale = 1;
         let stageX = 0;
         let stageY = 0;
@@ -953,7 +959,712 @@
 "每一次努力，都是对生命的礼赞。",
 "不要辜负生命，让生命绽放光彩。",
 "只有活出自我，才不枉此生。",
-"学习是你人生最美的风景，请细细品味。"];
+"学习是你人生最美的风景，请细细品味。",
+"路漫漫其修远兮，吾将上下而求索。——屈原《离骚》",
+"天行健，君子以自强不息；地势坤，君子以厚德载物。——《周易》",
+"不积跬步，无以至千里；不积小流，无以成江海。——荀子《劝学》",
+"锲而舍之，朽木不折；锲而不舍，金石可镂。——荀子《劝学》",
+"吾生也有涯，而知也无涯。——庄子《庄子·养生主》",
+"知之者不如好之者，好之者不如乐之者。——孔子《论语·雍也》",
+"学而不思则罔，思而不学则殆。——孔子《论语·为政》",
+"三军可夺帅也，匹夫不可夺志也。——孔子《论语·子罕》",
+"岁寒，然后知松柏之后凋也。——孔子《论语·子罕》",
+"士不可以不弘毅，任重而道远。——曾子《论语·泰伯》",
+"古之立大事者，不惟有超世之才，亦必有坚忍不拔之志。——苏轼《晁错论》",
+"业精于勤，荒于嬉；行成于思，毁于随。——韩愈《进学解》",
+"博观而约取，厚积而薄发。——苏轼《稼说送张琥》",
+"古人学问无遗力，少壮工夫老始成。——陆游《冬夜读书示子聿》",
+"纸上得来终觉浅，绝知此事要躬行。——陆游《冬夜读书示子聿》",
+"黑发不知勤学早，白首方悔读书迟。——颜真卿《劝学》",
+"少壮不努力，老大徒伤悲。——《汉乐府·长歌行》",
+"盛年不重来，一日难再晨。——陶渊明《杂诗》",
+"读书破万卷，下笔如有神。——杜甫《奉赠韦左丞丈二十二韵》",
+"书山有路勤为径，学海无涯苦作舟。——韩愈《古今贤文·劝学篇》",
+"问渠那得清如许？为有源头活水来。——朱熹《观书有感》",
+"立志欲坚不欲锐，成功在久不在速。——张孝祥《论治体札子》",
+"天下之事，常成于困约，而败于奢靡。——陆游《放翁典故》",
+"忧劳可以兴国，逸豫可以亡身。——欧阳修《新五代史·伶官传序》",
+"咬定青山不放松，立根原在破岩中。——郑板桥《竹石》",
+"千磨万击还坚劲，任尔东西南北风。——郑板桥《竹石》",
+"非淡泊无以明志，非宁静无以致远。——诸葛亮《诫子书》",
+"老骥伏枥，志在千里；烈士暮年，壮心不已。——曹操《龟媚》",
+"长风破浪会有时，直挂云帆济沧海。——李白《行路难》",
+"大鹏一日同风起，扶摇直上九万里。——李白《上李邕》",
+"天生我材必有用，千金散尽还复来。——李白《将进酒》",
+"会当凌绝顶，一览众山小。——杜甫《望岳》",
+"沉舟侧畔千帆过，病树前头万木春。——刘禹锡《酬乐天扬州初逢席上见赠》",
+"莫道桑榆晚，为霞尚满天。——刘禹锡《酬乐天咏老见示》",
+"生当作人杰，死亦为鬼雄。——李清照《夏日绝句》",
+"不畏浮云遮望眼，自缘身在最高层。——王安石《登飞来峰》",
+"春风得意马蹄疾，一日看尽长安花。——孟郊《登科后》",
+"十年磨一剑，霜刃未曾试。——贾岛《剑客》",
+"位卑未敢忘忧国，事定犹须待阖棺。——陆游《病起书怀》",
+"人生自古谁无死，留取丹心照汗青。——文天祥《过零丁洋》",
+"穷且益坚，不坠青云之志。——王勃《滕王阁序》",
+"老当益壮，宁移白首之心。——王勃《滕王阁序》",
+"精诚所至，金石为开。——《庄子·渔父》",
+"要想人前显贵，必得人后受罪。——关汉卿《裴度还带》",
+"世上无难事，只怕有心人。——吴承恩《西游记》",
+"宝剑锋从磨砺出，梅花香自苦寒来。——《警世贤文·勤奋篇》",
+"由俭入奢易，由奢入俭难。——司马光《训俭示康》",
+"夫君子之行，静以修身，俭以养德。——诸葛亮《诫子书》",
+"勿以恶小而为之，勿以善小而不为。——陈寿《三国志·蜀书·先主传》",
+"尺有所短，寸有所长。——屈原《卜居》",
+"满招损，谦受益。——《尚书·大禹谟》",
+"工欲善其事，必先利其器。——孔子《论语·卫灵公》",
+"敏而好学，不耻下问。——孔子《论语·公冶长》",
+"知之为知之，不知为不知，是知也。——孔子《论语·为政》",
+"见贤思齐焉，见不贤而内自省也。——孔子《论语·里仁》",
+"三人行，必有我师焉。——孔子《论语·述而》",
+"学而不厌，诲人不倦。——孔子《论语·述而》",
+"君子求诸己，小人求诸人。——孔子《论语·卫灵公》",
+"人无远虑，必有近忧。——孔子《论语·卫灵公》",
+"己所不欲，勿施于人。——孔子《论语·颜渊》",
+"言必信，行必果。——孔子《论语·子路》",
+"过而不改，是谓过矣。——孔子《论语·卫灵公》",
+"朝闻道，夕死可矣。——孔子《论语·里仁》",
+"君子坦荡荡，小人长戚戚。——孔子《论语·述而》",
+"志士仁人，无求生以害仁，有杀身以成仁。——孔子《论语·卫灵公》",
+"当仁，不让于师。——孔子《论语·卫灵公》",
+"博学而笃志，切问而近思，仁在其中矣。——子夏《论语·子张》",
+"君子耻其言而过其行。——孔子《论语·宪问》",
+"欲速则不达，见小利则大事不成。——孔子《论语·子路》",
+"往者不可谏，来者犹可追。——孔子《论语·微子》",
+"穷则独善其身，达则兼济天下。——孟子《孟子·尽心上》",
+"天将降大任于斯人也，必先苦其心志，劳其筋骨。——孟子《孟子·告子下》",
+"生于忧患，死于安乐。——孟子《孟子·告子下》",
+"富贵不能淫，贫贱不能移，威武不能屈。——孟子《孟子·滕文公下》",
+"爱人者，人恒爱之；敬人者，人恒敬之。——孟子《孟子·离娄下》",
+"老吾老，以及人之老；幼吾幼，以及人之幼。——孟子《孟子·梁惠王上》",
+"得道者多助，失道者寡助。——孟子《孟子·公孙丑下》",
+"尽信书，则不如无书。——孟子《孟子·尽心下》",
+"千里之行，始于足下。——老子《道德经》",
+"知人者智，自知者明。——老子《道德经》",
+"胜人者有力，自胜者强。——老子《道德经》",
+"合抱之木，生于毫末；九层之台，起于累土。——老子《道德经》",
+"大直若屈，大巧若拙，大辩若讷。——老子《道德经》",
+"祸兮福之所倚，福兮祸之所伏。——老子《道德经》",
+"上善若水，水利万物而不争。——老子《道德经》",
+"道可道，非常道；名可名，非常名。——老子《道德经》",
+"天下难事，必作于易；天下大事，必作于细。——老子《道德经》",
+"信言不美，美言不信。——老子《道德经》",
+"知足不辱，知止不殆，可以长久。——老子《道德经》",
+"流水不腐，户枢不蠹。——吕不韦《吕氏春秋》",
+"亡羊而补牢，未为迟也。——《战国策·楚策》",
+"前事不忘，后事之师。——《战国策·赵策》",
+"近朱者赤，近墨者黑。——傅玄《太子少傅箴》",
+"管中窥豹，时见一斑。——刘义庆《世说新语》",
+"盲人摸象，各执一端。——《大般涅槃经》",
+"兼听则明，偏信则暗。——司马光《资治通鉴》",
+"由俭入奢易，由奢入俭难。——司马光《资治通鉴》",
+"千里送鹅毛，礼轻情意重。——徐渭《路史》",
+"海内存知己，天涯若比邻。——王勃《送杜少府之任蜀州》",
+"莫愁前路无知己，天下谁人不识君。——高适《别董大》",
+"劝君更尽一杯酒，西出阳关无故人。——王维《送元二使安西》",
+"洛阳亲友如相问，一片冰心在玉壶。——王昌龄《芙蓉楼送辛渐》",
+"独在异乡为异客，每逢佳节倍思亲。——王维《九月九日忆山东兄弟》",
+"谁言寸草心，报得三春晖。——孟郊《游子吟》",
+"本是同根生，相煎何太急。——曹植《七步诗》",
+"烽火连三月，家书抵万金。——杜甫《春望》",
+"露从今夜白，月是故乡明。——杜甫《月夜忆舍弟》",
+"近乡情更怯，不敢问来人。——宋之问《渡汉江》",
+"少小离家老大回，乡音无改鬓毛衰。——贺知章《回乡偶书》",
+"举头望明月，低头思故乡。——李白《静夜思》",
+"曾经沧海难为水，除却巫山不是云。——元稹《离思》",
+"春蚕到死丝方尽，蜡炬成灰泪始干。——李商隐《无题》",
+"身无彩凤双飞翼，心有灵犀一点通。——李商隐《无题》",
+"两情若是久长时，又岂在朝朝暮暮。——秦观《鹊桥仙》",
+"衣带渐宽终不悔，为伊消得人憔悴。——柳永《蝶恋花》",
+"众里寻他千百度，蓦然回首，那人却在，灯火阑珊处。——辛弃疾《青玉案·元夕》",
+"在此刻打盹，你将做梦；在此刻学习，你将圆梦。——哈佛大学图书馆墙上的训言（传）",
+"必须敢于正视，这才可望敢想，敢说，敢做，敢当。——鲁迅《华盖集》",
+"时间就像海绵里的水，只要愿挤，总还是有的。——鲁迅《华盖集》",
+"哪里有天才，我是把别人喝咖啡的工夫都用在工作上的。——鲁迅《三闲集》",
+"横眉冷对千夫指，俯首甘为孺子牛。——鲁迅《自嘲》",
+"真的猛士，敢于直面惨淡的人生，敢于正视淋漓的鲜血。——鲁迅《记念刘和珍君》",
+"希望本是无所谓有，无所谓无的。这正如地上的路；其实地上本没有路，走的人多了，也便成了路。——鲁迅《故乡》",
+"改造自己，总比禁止别人来得难。——鲁迅《且介亭杂文》",
+"只要能培一朵花，就不妨做做会朽的腐草。——鲁迅《野草》",
+"怀疑并不是缺点。总是疑，而并不下断语，这才是缺点。——鲁迅《两地书》",
+"友谊是两颗心真诚相待，而不是一颗心对另一颗心的敲打。——鲁迅《鲁迅书信集》",
+"读书好，多读书，读好书。——冰心《忆读书》",
+"爱在左，同情在右，走在生命的两旁，随时撒种，随时开花。——冰心《寄小读者》",
+"成功的花，人们只惊羡她现时的明艳！然而当初她的芽儿，浸透了奋斗的泪泉，洒遍了牺牲的血雨。——冰心《繁星·春水》",
+"墙角的花！你孤芳自赏时，天地便小了。——冰心《繁星·春水》",
+"人生的路虽然漫长，但紧要处往往只有几步，特别是当人年轻的时候。——柳青《创业史》",
+"生活不能等待别人来安排，要自己去争取和奋斗。——路遥《平凡的世界》",
+"在这个世界上，不是所有合理的和美好的都能按照自己的愿望存在或实现。——路遥《平凡的世界》",
+"钱当然很重要，这我不是不知道；我一天何尝不为钱而受熬苦！可是，我又觉得，人活这一辈子，还应该有些另外的什么才对……——路遥《平凡的世界》",
+"什么是青春？青春是艰难的。——路遥《平凡的世界》",
+"只要春天不死，就会有迎春的花朵年年岁岁开放。——路遥《平凡的世界》",
+"人之所以痛苦，在于追求错误的东西。——路遥《人生》",
+"一个人的命运不是自己想改变就能改变了的，至于理想，只不过是职业好坏的代名词罢了。——路遥《人生》",
+"我宁愿是只鱼，7秒一过就什么都忘记，曾经遇到的人，曾经做过的事，都可以烟消云散。——饶雪漫《沙漏》",
+"一个人只要有意志力，就能超越他的环境。——杰克·伦敦《马丁·伊登》",
+"人活着不是为了拖动锁链，而是为了展开双翼。——雨果《悲惨世界》",
+"世界上最宽阔的是海洋，比海洋更宽阔的是天空，比天空更宽阔的是人的心灵。——雨果《悲惨世界》",
+"谁虚度年华，青春就要褪色，生命就会抛弃他们。——雨果《巴黎圣母院》",
+"坚持意志伟大的事业需要始终不渝的精神。——伏尔泰《查第格》",
+"除了野蛮国家，整个世界都被书统治着。——福尔泰《哲学通信》",
+"书是人类进步的阶梯。——高尔基《论文学》",
+"书籍是人类思想的宝库。——乌申斯基《人是教育的对象》",
+"书籍是巨大的力量。——列宁《列宁全集》",
+"读一本好书，就是和许多高尚的人谈话。——歌德《歌德谈话录》",
+"经验丰富的人读书用两只眼睛，一只眼睛看到纸面上的话，另一只眼睛看到纸的背面。——歌德《歌德谈话录》",
+"人只有献身于社会，才能找出那短暂而有风险的生命的意义。——爱因斯坦《爱因斯坦文集》",
+"想象力比知识更重要，因为知识是有限的，而想象力概括着世界上的一切，推动着进步。——爱因斯坦《爱因斯坦文集》",
+"成功＝艰苦劳动＋正确方法＋少说空话。——爱因斯坦《爱因斯坦文集》",
+"人的差异在于业余时间。——爱因斯坦《爱因斯坦文集》",
+"不要努力成为一个成功者，要努力成为一个有价值的人。——爱因斯坦《爱因斯坦文集》",
+"只有两条路可以过完你的一生：一条是好像没有奇迹，一条是好像一切都是奇迹。——爱因斯坦《爱因斯坦文集》",
+"如果说我比别人看得更远些，那是因为我站在巨人的肩膀上。——牛顿《牛顿通信集》",
+"无知是一切痛苦之源。——苏格拉底《对话录》",
+"认识你自己。——苏格拉底《铭言》",
+"未经审视的人生是不值得过的。——苏格拉底《申辩篇》",
+"我们知道的东西是有限的，我们不知道的东西则是无穷的。——拉普拉斯《遗言》",
+"知识就是力量。——培根《沉思录》",
+"读书使人充实，讨论使人机智，笔记使人准确。——培根《培根随笔》",
+"历史使人明智，诗歌使人智慧，数学使人周密，科学使人深刻，伦理使人庄重，逻辑修辞使人善辩。——培根《培根随笔》",
+"如果把生活比做出征，是不恰当的；生活是去朝圣。——罗曼·罗兰《约翰·克利斯朵夫》",
+"世界上只有一种英雄主义，那就是认清生活的真相后依然热爱生活。——罗曼·罗兰《米开朗基罗传》",
+"大多数人在二十或三十岁时就死了：一过这个年龄，他们只变了自己的影子。——罗曼·罗兰《约翰·克利斯朵夫》",
+"伟大的灵魂，常寓于平凡的躯体。——罗曼·罗兰《贝多芬传》",
+"痛苦的时候，也就是我们成长的时候。——罗曼·罗兰《约翰·克利斯朵夫》",
+"一个人可以被毁灭，但不能被打败。——海明威《老人与海》",
+"生活总是让我们遍体鳞伤，但到后来，那些受伤的地方一定会变成我们最强壮的地方。——海明威《永别了，武器》",
+"优于别人，并不高贵，真正的高贵应该是优于过去的自己。——海明威《真实的高贵》",
+"现在不是去想缺少什么的时候，该想一想凭现有的东西你能做什么。——海明威《老人与海》",
+"只要你不计较得失，人生还有什么不能克服的？——海明威《老人与海》",
+"我们花了两年学会说话，却要花上六十年来学会闭嘴。——海明威《死在午后》",
+"生存还是毁灭，这是一个问题。——莎士比亚《哈姆雷特》",
+"即使被关在果壳之中，我仍自以为是无限宇宙之王。——莎士比亚《哈姆雷特》",
+"黑夜无论怎样悠长，白昼总会到来。——莎士比亚《麦克白》",
+"在时间的大钟上，只有两个字：现在。——莎士比亚《第十二夜》",
+"放弃时间的人，时间也放弃他。——莎士比亚《冬天的故事》",
+"书籍是全世界的营养品。——莎士比亚《莎士比亚全集》",
+"整个世界是一座舞台，所有的男男女女不过是演员。——莎士比亚《皆大欢喜》",
+"凡是过去，皆为序章。——莎士比亚《暴风雨》",
+"适当的悲哀可以表示感情的深切，过度的伤心却可以证明智慧的欠缺。——莎士比亚《罗密欧与朱丽叶》",
+"本来无望的事，大胆尝试，往往能成功。——莎士比亚《维纳斯与阿都尼》",
+"懦夫在未死以前，就已经死了好多次；勇士一生只死一次。——莎士比亚《尤利乌斯·恺撒》",
+"幸福的家庭都是相似的，不幸的家庭各不相同。——列夫·托尔斯泰《安娜·卡列尼娜》",
+"人生的价值，并不是用时间，而是用深度去衡量的。——列夫·托尔斯泰《最后的日记》",
+"了解一切，就会原谅一切。——列夫·托尔斯泰《战争与和平》",
+"人类被赋予了一种工作，那就是精神的成长。——列夫·托尔斯泰《复活》",
+"一个人若没有热情，他将一事无成，而热情的基点正是责任心。——列夫·托尔斯泰《安娜·卡列尼娜》",
+"拖延是时间的窃贼。——狄更斯《大卫·科波菲尔》",
+"这是一个最好的时代，这是一个最坏的时代。——狄更斯《双城记》",
+"顽强的毅力可以征服世界上任何一座高峰。——狄更斯《尼古拉斯·尼克贝》",
+"别让你的舌头抢先于你的思考。——德谟克利特《著作残篇》",
+"在这个世界上，平坦的路是难走的。——歌德《威廉·迈斯特的学习时代》",
+"如果你要活得愉快，请你不要计较过去。——歌德《格言诗》",
+"志向和热爱是伟大行为的双翼。——歌德《浮士德》",
+"无论你能不能，只要你想，就去做吧。——歌德《浮士德》",
+"人不能像走兽那样活着，应该追求知识和美德。——但丁《神曲》",
+"走自己的路，让别人说去吧。——但丁《神曲》",
+"生活中有两个悲剧：一个是你的欲望得不到满足，另一个是你的欲望得到了满足。——王尔德《温夫人的扇子》",
+"我们都生活在阴沟里，但仍有人仰望星空。——王尔德《温夫人的扇子》",
+"做你自己，因为别人都有人做了。——王尔德《王尔德语录》",
+"爱自己是终身浪漫的开始。——王尔德《理想的丈夫》",
+"除了诱惑，我什么都能抵抗。——王尔德《温夫人的扇子》",
+"任何瞬间的心灵接触，都可能注入永恒。——王尔德《道林·格雷的画像》",
+"一个人思虑太多，就会失去做人的乐趣。——莎士比亚《恺撒大帝》",
+"如果你不想要，想找一个借口；如果你想要，想找一个方法。——阿拉伯谚语",
+"即使断了一条弦，其余的三条弦还是要继续演奏，这就是人生。——爱默生《爱默生随笔》",
+"自信是成功的第一秘诀。——爱默生《社会与孤独》",
+"庸人之所以平庸，是因为他们拒绝承受痛苦。——叔本华《作为意志和表象的世界》",
+"人生就像钟摆，在痛苦和无聊之间摇摆。——叔本华《作为意志和表象的世界》",
+"既不回头，何必不忘。既然无缘，何须誓言。——赵灵儿《仙剑奇侠传》（引申自诗词）",
+"真正的平静，不是避开车马喧嚣，而是在心中修篱种菊。——林徽因《林徽因传》",
+"温柔要有，但不是妥协，我们要在安静中，不慌不忙的坚强。——林徽因《林徽因文集》",
+"你若安好，便是晴天。——林徽因《林徽因传》",
+"对于世界而言，你是一个人；但是对于某个人，你是他的整个世界。——玛格丽特·米切尔《飘》",
+"明天又是新的一天。——玛格丽特·米切尔《飘》",
+"土地是世界上唯一值得你去为之工作、为之战斗、为之牺牲的东西，因为它是唯一永恒的东西。——玛格丽特·米切尔《飘》",
+"人的一生中，最光辉的一天并非是功成名就那天，而是从悲叹与绝望中产生对人生的挑战，以勇敢迈向意志那天。——福楼拜《包法利夫人》",
+"仅有才气是不够的，还要有能量。——福楼拜《情感教育》",
+"无论你做什么，都要做到底。——福楼拜《致莫泊桑书》",
+"天才不过是长久的忍耐，努力吧！——福楼拜《致莫泊桑书》",
+"一个人只拥有此生此世是不够的，他还应该拥有诗意的世界。——王小波《万寿寺》",
+"人的一切痛苦，本质上都是对自己无能的愤怒。——王小波《沉默的大多数》",
+"智慧本身就是好的。有一天我们都会死去，追求智慧的道路还会有人在走着。——王小波《沉默的大多数》",
+"我相信，那一切都是种子。只有经过埋葬，才有生机。——顾城《顾城诗集》",
+"黑夜给了我黑色的眼睛，我却用它寻找光明。——顾城《一代人》",
+"你，一会看我，一会看云。我觉得，你看我时很远，你看云时很近。——顾城《远和近》",
+"如果冬天来了，春天还会远吗？——雪莱《西风颂》",
+"浅水是喧哗的，深水是沉默的。——雪莱《普罗米修斯》",
+"世界上没有幸福，但有自由和宁静。——普希金《叶甫盖尼·奥涅金》",
+"假如生活欺骗了你，不要悲伤，不要心急！忧郁的日子里需要镇静。——普希金《假如生活欺骗了你》",
+"一切都是瞬息，一切都将过去；而那过去了的，就会成为亲切的怀恋。——普希金《假如生活欺骗了你》",
+"人是为了自己的希望才活着的。——肖洛霍夫《静静的顿河》",
+"不要向井里吐痰，也许你还会来喝井里的水。——肖洛霍夫《静静的顿河》",
+"我们不仅要活下去，而且要活得高尚。——陀思妥耶夫斯基《罪与罚》",
+"苦难是什么？苦难应该是土壤。只要你愿意把你内心所有的感受、隐忍、埋藏在其中，很有可能开出你想象不到的、灿烂的花朵。——陀思妥耶夫斯基《被侮辱与被损害的》",
+"要爱具体的人，不要爱抽象的人；要爱生活，不要爱生活的意义。——陀思妥耶夫斯基《卡拉马佐夫兄弟》",
+"人不是因为美丽才可爱，而是因为可爱才美丽。——列夫·托尔斯泰《战争与和平》",
+"幸福的人都是相似的，不幸的人各有各的不幸。——列夫·托尔斯泰《安娜·卡列尼娜》",
+"我不同意你说的每一个字，但我誓死捍卫你说话的权利。——伏尔泰（传）",
+"美貌是上帝的馈赠，但智慧是人生的奖赏。——伏尔泰《老实人》",
+"我思故我在。——笛卡尔《谈谈方法》",
+"如果你想成为真理的探究者，由于你的力量，在你的生命中，至少应该有一次，要对一切事物产生怀疑。——笛卡尔《哲学原理》",
+"存在即合理。——黑格尔《法哲学原理》",
+"一个民族有一群仰望星空的人，他们才有希望。——黑格尔《历史哲学》",
+"人是生而自由的，但却无往不在枷锁之中。——卢梭《社会契约论》",
+"生活得最有意义的人，不是年岁最大的人，而是对生活最有感受的人。——卢梭《爱弥儿》",
+"我们用尽了一生，不过是为了成为一个普通人。——加缪《局外人》",
+"在隆冬，我终于知道，我身上有一个不可战胜的夏天。——加缪《夏天集》",
+"重要的不是治愈，而是带着病痛活下去。——加缪《西西弗神话》",
+"真正严肃的哲学问题只有一个，那就是自杀。——加缪《西西弗神话》",
+"他人即地狱。——萨特《禁闭》",
+"如果你独处时感到寂寞，这说明你没有和你自己成为好朋友。——萨特《存在与虚无》",
+"生命生命，那是自然会给人类去雕琢的宝石。——诺贝尔《诺贝尔传》",
+"我不愿意死在病床上，我宁愿死在工作岗位上。——诺贝尔《诺贝尔传》",
+"只要我还有一口气，我就要为科学事业奋斗终身。——诺贝尔《诺贝尔传》",
+"只要能收获甜蜜，荆棘丛中也会有蜜蜂忙碌的身影。——基茨《基茨书信集》",
+"美是一种永恒的喜悦。——济慈《恩底弥翁》",
+"听到的旋律是美妙的，听不到的旋律更美妙。——济慈《希腊古瓮颂》",
+"在这个世界上，所有真性情的人，想法总是与众不同。——沈从文《边城》",
+"日头没有辜负我们，我们也切莫辜负日头。——沈从文《边城》",
+"我行过许多地方的桥，看过许多次数的云，喝过许多种类的酒，却只爱过一个正当最好年龄的人。——沈从文《湘行散记》",
+"我们不是生活在被毁坏的世界里，而是生活在错乱的世界里。——卡夫卡《确信》",
+"人必须有耐心，还要有信心。——卡夫卡《随笔集》",
+"心脏是一座有两间卧室的房子，一间住着痛苦，一间住着快乐，人不能笑得太响，否则笑声会吵醒隔壁房间的痛苦。——卡夫卡《箴言》",
+"你没有走出屋子的必要。你留在桌边听吧。——卡夫卡《误入世界》",
+"生命中曾经有过的所有灿烂，终究都需要用寂寞来偿还。——马尔克斯《百年孤独》",
+"过去都是假的，回忆是一条没有归途的路。——马尔克斯《百年孤独》",
+"所有人都显得很寂寞，用自己的方式想尽办法排遣寂寞，事实上仍是延续自己的寂寞。——马尔克斯《百年孤独》",
+"很多年以后，奥雷连诺上校站在行刑队面前，准会想起父亲带他去参观冰块的那个遥远的下午。——马尔克斯《百年孤独》",
+"生活不是我们活过的日子，而是我们记住的日子。——马尔克斯《活着为了讲述》",
+"买一张票，去一个最远的地方。——三毛《万水千山走遍》",
+"一个人至少拥有一个梦想，有一个理由去坚强。——三毛《梦里花落知多少》",
+"如果有来生，要做一棵树，站成永恒，没有悲欢的姿势。——三毛《说给自己听》",
+"刻意去找的东西，往往是找不到的。天下万物的来和去，都有他的时间。——三毛《谈心》",
+"我笑，便面如春花，定是能感动人的，任他是谁。——三毛《撒哈拉的故事》",
+"岁月极美，在于它必然的流逝。——三毛《岁月》",
+"读书多了，容颜自然改变。——三毛《送你一匹马》",
+"我们终此一生，就是要摆脱他人的期待，找到真正的自己。——伍绮诗《无声告白》",
+"你必须学会反击。——伍绮诗《无声告白》",
+"有些人刻骨铭心，没几年会遗忘。有些人不论生死，都陪在身旁。——南派三叔《盗墓笔记》",
+"比鬼神更可怕的，是人心。——南派三叔《盗墓笔记》",
+"如果你想知道周围有多么黑暗，你就得留意远处微弱的光线。——卡尔维诺《看不见的城市》",
+"我不再爱她，这是确定的，但也许我爱她。爱情太短，而遗忘太长。——聂鲁达《二十首情诗和一首绝望的歌》",
+"当华美的叶片落尽，生命的脉络才历历可见。——聂鲁达《二十首情诗和一首绝望的歌》",
+"你来人间一趟，你要看看太阳。——海子《夏天的太阳》",
+"面朝大海，春暖花开。——海子《面朝大海，春暖花开》",
+"从明天起，做一个幸福的人。——海子《面朝大海，春暖花开》",
+"今夜我不关心人类，我只关心你。——海子《日记》",
+"我不去想是否能够成功，既然选择了远方，便只顾风雨兼程。——汪国真《热爱生命》",
+"没有比脚更长的路，没有比人更高的山。——汪国真《山高路远》",
+"既然目标是地平线，留给世界的只能是背影。——汪国真《热爱生命》",
+"要输就输给追求，要嫁就嫁给幸福。——汪国真《嫁给幸福》",
+"你的气质里，藏着你读过的书，走过的路，爱过的人。——卡萨布兰卡（电影台词/传为名言）",
+"只有用心灵才能看得清事物本质，真正重要的东西是肉眼无法看见的。——圣埃克苏佩里《小王子》",
+"如果你驯化了我，我们就彼此需要了。——圣埃克苏佩里《小王子》",
+"所有的大人都曾经是小孩，虽然，只有少数的人记得。——圣埃克苏佩里《小王子》",
+"一旦你驯服了什么，就要对她负责，永远的负责。——圣埃克苏佩里《小王子》",
+"星星发亮是为了让每一个人有一天都能找到属于自己的星星。——圣埃克苏佩里《小王子》",
+"你下午四点钟来，那么从三点钟起，我就开始感到幸福。——圣埃克苏佩里《小王子》",
+"人与人之间情断义绝，并不需要什么具体的理由。就算没有理由，也可能平白无故地就不再相互理解了。——村上春树《挪威的森林》",
+"死并非生的对立面，而作为生的一部分永存。——村上春树《挪威的森林》",
+"哪里会有人喜欢孤独，不过是不喜欢失望罢了。——村上春树《挪威的森林》",
+"每个人都有属于自己的一片森林，也许我们从来不曾去过，但它一直在那里，总会在那里。——村上春树《挪威的森林》",
+"你要做一个不动声色的大人了。不准情绪化，不准偷偷想念，不准回头看。——村上春树《舞！舞！舞！》",
+"刚刚好，看到你幸福的样子，于是幸福着你的幸福。——村上春树《国境以南太阳以西》",
+"不管全世界所有人怎么说，我都认为自己的感受才是正确的。——村上春树《世界尽头与冷酷仙境》",
+"我一直以为人是慢慢变老的，其实不是，人是一瞬间变老的。——村上春树《舞！舞！舞！》",
+"活着就意味着必须要做点什么，请好好努力。——村上春树《地下》",
+"不要同情自己，同情自己是卑劣懦夫干的勾当。——村上春树《挪威的森林》",
+"如果你掉进了黑暗里，你能做的，不过是静心等待，直到你的双眼适应黑暗。——村上春树《挪威的森林》",
+"不管前方的路有多苦，只要走的方向正确，不管多么崎岖不平，都比站在原地更接近幸福。——宫崎骏《千与千寻》",
+"人生就是一列开往坟墓的列车，路途上会有很多站，很难有人可以自始至终陪着走完。——宫崎骏《千与千寻》",
+"曾经发生过的事情不可能忘记，只不过是想不起来而已。——宫崎骏《千与千寻》",
+"生活坏到一定程度就会好起来，因为它无法更坏。——宫崎骏《龙猫》",
+"有些烦恼，丢掉了，才有云淡风轻的机会。——宫崎骏《龙猫》",
+"坚强不是不流泪，而是含着眼泪奔跑。——宫崎骏（传）",
+"起风了，唯有努力生存。——宫崎骏《起风了》（引自瓦莱里诗句）",
+"只有一个人在旅行时，才听得到自己的声音，它会告诉你，这世界比想象中的宽阔。——宫崎骏《魔女宅急便》",
+"人永远不知道，谁哪次不经意的跟你说了再见之后，就真的不会再见了。——宫崎骏《千与千寻》",
+"一万年太久，只争朝夕。——毛泽东《满江红·和郭沫若同志》",
+"世上无难事，只要肯登攀。——毛泽东《水调歌头·重上井冈山》",
+"自信人生二百年，会当水击三千里。——毛泽东《七古·残句》",
+"雄关漫道真如铁，而今迈步从头越。——毛泽东《忆秦娥·娄山关》",
+"不到长城非好汉，屈指行程二万。——毛泽东《清平乐·六盘山》",
+"牢骚太盛防肠断，风物长宜放眼量。——毛泽东《七律·和柳亚子先生》",
+"为有牺牲多壮志，敢教日月换新天。——毛泽东《七律·到韶山》",
+"多少事，从来急；天地转，光阴迫。——毛泽东《满江红·和郭沫若同志》",
+"星星之火，可以燎原。——毛泽东《星星之火，可以燎原》",
+"好好学习，天天向上。——毛泽东（题词）",
+"世界是你们的，也是我们的，但是归根结底是你们的。——毛泽东（讲话）",
+"凡事预则立，不预则废。——《礼记·中庸》",
+"博学之，审问之，慎思之，明辨之，笃行之。——《礼记·中庸》",
+"大学之道，在明明德，在亲民，在止于至善。——《礼记·大学》",
+"苟日新，日日新，又日新。——《礼记·大学》",
+"修身、齐家、治国、平天下。——《礼记·大学》",
+"好问则裕，自用则小。——《尚书·仲虺之诰》",
+"天作孽，犹可违；自作孽，不可活。——《尚书·太甲》",
+"君子不重则不威，学则不固。——孔子《论语·学而》",
+"贫而无怨难，富而无骄易。——孔子《论语·宪问》",
+"工欲善其事，必先利其器。——孔子《论语·卫灵公》",
+"不患人之不己知，患其不能也。——孔子《论语·宪问》",
+"言未及之而言谓之躁，言及之而不言谓之隐，未见颜色而言谓之瞽。——孔子《论语·季氏》",
+"益者三友，损者三友。友直，友谅，友多闻，益矣。——孔子《论语·季氏》",
+"见善如不及，见不善如探汤。——孔子《论语·季氏》",
+"君子疾没世而名不称焉。——孔子《论语·卫灵公》",
+"君子求诸己，小人求诸人。——孔子《论语·卫灵公》",
+"人能弘道，非道弘人。——孔子《论语·卫灵公》",
+"过而不改，是谓过矣。——孔子《论语·卫灵公》",
+"当仁，不让于师。——孔子《论语·卫灵公》",
+"有教无类。——孔子《论语·卫灵公》",
+"道不同，不相为谋。——孔子《论语·卫灵公》",
+"不愤不启，不悱不发。——孔子《论语·述而》",
+"发愤忘食，乐以忘忧，不知老之将至云尔。——孔子《论语·述而》",
+"知之者不如好之者，好之者不如乐之者。——孔子《论语·雍也》",
+"质胜文则野，文胜质则史。文质彬彬，然后君子。——孔子《论语·雍也》",
+"知者不惑，仁者不忧，勇者不惧。——孔子《论语·子罕》",
+"三军可夺帅也，匹夫不可夺志也。——孔子《论语·子罕》",
+"岁寒，然后知松柏之后凋也。——孔子《论语·子罕》",
+"其身正，不令而行；其身不正，虽令不从。——孔子《论语·子路》",
+"近者悦，远者来。——孔子《论语·子路》",
+"欲速则不达，见小利则大事不成。——孔子《论语·子路》",
+"君子泰而不骄，小人骄而不泰。——孔子《论语·子路》",
+"刚、毅、木、讷近仁。——孔子《论语·子路》",
+"贫而无谄，富而无骄。——孔子《论语·学而》",
+"学而时习之，不亦说乎？——孔子《论语·学而》",
+"巧言令色，鲜矣仁。——孔子《论语·学而》",
+"吾日三省吾身。——曾子《论语·学而》",
+"弟子入则孝，出则弟，谨而信，泛爱众，而亲仁。——孔子《论语·学而》",
+"事父母，能竭其力；事君，能致其身。——子夏《论语·学而》",
+"慎终追远，民德归厚矣。——曾子《论语·学而》",
+"礼之用，和为贵。——有子《论语·学而》",
+"不患人之不己知，患不知人也。——孔子《论语·学而》",
+"温故而知新，可以为师矣。——孔子《论语·为政》",
+"君子周而不比，小人比而不周。——孔子《论语·为政》",
+"学而不思则罔，思而不学则殆。——孔子《论语·为政》",
+"攻乎异端，斯害也已。——孔子《论语·为政》",
+"人而无信，不知其可也。——孔子《论语·为政》",
+"是可忍也，孰不可忍也？——孔子《论语·八佾》",
+"朝闻道，夕死可矣。——孔子《论语·里仁》",
+"君子怀德，小人怀土；君子怀刑，小人怀惠。——孔子《论语·里仁》",
+"君子喻于义，小人喻于利。——孔子《论语·里仁》",
+"见贤思齐焉，见不贤而内自省也。——孔子《论语·里仁》",
+"父母在，不远游，游必有方。——孔子《论语·里仁》",
+"父母之年，不可不知也。一则以喜，一则以惧。——孔子《论语·里仁》",
+"古者言之不出，耻躬之不逮也。——孔子《论语·里仁》",
+"君子欲讷于言而敏于行。——孔子《论语·里仁》",
+"德不孤，必有邻。——孔子《论语·里仁》",
+"朽木不可雕也，粪土之墙不可圬也。——孔子《论语·公冶长》",
+"敏而好学，不耻下问。——孔子《论语·公冶长》",
+"三思而后行。——孔子《论语·公冶长》",
+"老者安之，朋友信之，少者怀之。——孔子《论语·公冶长》",
+"不迁怒，不贰过。——孔子《论语·雍也》",
+"中人以上，可以语上也；中人以下，不可以语上也。——孔子《论语·雍也》",
+"知者乐水，仁者乐山。——孔子《论语·雍也》",
+"中庸之为德也，其至矣乎！——孔子《论语·雍也》",
+"志于道，据于德，依于仁，游于艺。——孔子《论语·述而》",
+"自行束脩以上，吾未尝无诲焉。——孔子《论语·述而》",
+"饭疏食饮水，曲肱而枕之，乐亦在其中矣。——孔子《论语·述而》",
+"不义而富且贵，于我如浮云。——孔子《论语·述而》",
+"我非生而知之者，好古，敏以求之者也。——孔子《论语·述而》",
+"三人行，必有我师焉。——孔子《论语·述而》",
+"择其善者而从之，其不善者而改之。——孔子《论语·述而》",
+"君子坦荡荡，小人长戚戚。——孔子《论语·述而》",
+"泰伯，其可谓至德也已矣。——孔子《论语·泰伯》",
+"士不可以不弘毅，任重而道远。——曾子《论语·泰伯》",
+"仁以为己任，不亦重乎？死而后已，不亦远乎？——曾子《论语·泰伯》",
+"不在其位，不谋其政。——孔子《论语·泰伯》",
+"逝者如斯夫，不舍昼夜。——孔子《论语·子罕》",
+"吾未见好德如好色者也。——孔子《论语·子罕》",
+"三军可夺帅也，匹夫不可夺志也。——孔子《论语·子罕》",
+"知者不惑，仁者不忧，勇者不惧。——孔子《论语·子罕》",
+"未能事人，焉能事鬼？——孔子《论语·先进》",
+"未知生，焉知死？——孔子《论语·先进》",
+"过犹不及。——孔子《论语·先进》",
+"非礼勿视，非礼勿听，非礼勿言，非礼勿动。——孔子《论语·颜渊》",
+"己所不欲，勿施于人。——孔子《论语·颜渊》",
+"死生有命，富贵在天。——子夏《论语·颜渊》",
+"四海之内，皆兄弟也。——子夏《论语·颜渊》",
+"君子成人之美，不成人之恶。——孔子《论语·颜渊》",
+"政者，正也。——孔子《论语·颜渊》",
+"君子以文会友，以友辅仁。——曾子《论语·颜渊》",
+"名不正，则言不顺；言不顺，则事不成。——孔子《论语·子路》",
+"言必信，行必果。——孔子《论语·子路》",
+"君子和而不同，小人同而不和。——孔子《论语·子路》",
+"士而怀居，不足以为士矣。——孔子《论语·宪问》",
+"古之学者为己，今之学者为人。——孔子《论语·宪问》",
+"君子耻其言而过其行。——孔子《论语·宪问》",
+"不在其位，不谋其政。——孔子《论语·宪问》",
+"知其不可而为之。——晨门《论语·宪问》",
+"修己以敬。——孔子《论语·宪问》",
+"修己以安人。——孔子《论语·宪问》",
+"修己以安百姓。——孔子《论语·宪问》",
+"志士仁人，无求生以害仁，有杀身以成仁。——孔子《论语·卫灵公》",
+"人无远虑，必有近忧。——孔子《论语·卫灵公》",
+"躬自厚而薄责于人，则远怨矣。——孔子《论语·卫灵公》",
+"君子疾没世而名不称焉。——孔子《论语·卫灵公》",
+"君子求诸己，小人求诸人。——孔子《论语·卫灵公》",
+"群居终日，言不及义，好行小慧，难矣哉！——孔子《论语·卫灵公》",
+"当仁，不让于师。——孔子《论语·卫灵公》",
+"有教无类。——孔子《论语·卫灵公》",
+"道不同，不相为谋。——孔子《论语·卫灵公》",
+"不患寡而患不均，不患贫而患不安。——孔子《论语·季氏》",
+"既来之，则安之。——孔子《论语·季氏》",
+"益者三友，损者三友。——孔子《论语·季氏》",
+"生而知之者，上也；学而知之者，次也。——孔子《论语·季氏》",
+"君子有三戒：少之时，血气未定，戒之在色；及其壮也，血气方刚，戒之在斗；及其老也，血气既衰，戒之在得。——孔子《论语·季氏》",
+"君子有九思：视思明，听思聪，色思温，貌思恭，言思忠，事思敬，疑思问，忿思难，见得思义。——孔子《论语·季氏》",
+"性相近也，习相远也。——孔子《论语·阳货》",
+"唯上智与下愚不移。——孔子《论语·阳货》",
+"割鸡焉用牛刀。——孔子《论语·阳货》",
+"恭、宽、信、敏、惠。——孔子《论语·阳货》",
+"饱食终日，无所用心，难矣哉！——孔子《论语·阳货》",
+"唯女子与小人为难养也。——孔子《论语·阳货》",
+"往者不可谏，来者犹可追。——孔子《论语·微子》",
+"四体不勤，五谷不分。——荷蓧丈人《论语·微子》",
+"仕而优则学，学而优则仕。——子夏《论语·子张》",
+"君子有三变：望之俨然，即之也温，听其言也厉。——子夏《论语·子张》",
+"博学而笃志，切问而近思，仁在其中矣。——子夏《论语·子张》",
+"大德不逾闲，小德出入可也。——子夏《论语·子张》",
+"不知命，无以为君子也。——孔子《论语·尧曰》",
+"不知礼，无以立也。——孔子《论语·尧曰》",
+"不知言，无以知人也。——孔子《论语·尧曰》",
+"非淡泊无以明志，非宁静无以致远。——诸葛亮《诫子书》",
+"静以修身，俭以养德。——诸葛亮《诫子书》",
+"淫慢则不能励精，险躁则不能治性。——诸葛亮《诫子书》",
+"年与时驰，意与日去。——诸葛亮《诫子书》",
+"遂成枯落，多不接世。——诸葛亮《诫子书》",
+"悲守穷庐，将复何及！——诸葛亮《诫子书》",
+"勿以恶小而为之，勿以善小而不为。——陈寿《三国志·蜀书·先主传》",
+"惟贤惟德，能服于人。——陈寿《三国志·蜀书·先主传》",
+"鞠躬尽瘁，死而后已。——诸葛亮《后出师表》",
+"受任于败军之际，奉命于危难之间。——诸葛亮《出师表》",
+"亲贤臣，远小人，此先汉所以兴隆也。——诸葛亮《出师表》",
+"亲小人，远贤臣，此后汉所以倾颓也。——诸葛亮《出师表》",
+"苟全性命于乱世，不求闻达于诸侯。——诸葛亮《出师表》",
+"读书百遍，其义自见。——陈寿《三国志·魏书·王肃传》",
+"路漫漫其修远兮，吾将上下而求索。——屈原《离骚》",
+"长太息以掩涕兮，哀民生之多艰。——屈原《离骚》",
+"亦余心之所善兮，虽九死其犹未悔。——屈原《离骚》",
+"举世皆浊我独清，众人皆醉我独醒。——屈原《渔父》",
+"尺有所短，寸有所长。——屈原《卜居》",
+"新沐者必弹冠，新浴者必振衣。——屈原《渔父》",
+"安能以身之察察，受物之汶汶者乎。——屈原《渔父》",
+"沧浪之水清兮，可以濯吾缨；沧浪之水浊兮，可以濯吾足。——《孟子·离娄上》（引自渔父歌）",
+"其曲弥高，其和弥寡。——宋玉《对楚王问》",
+"风蕭蕭兮易水寒，壮士一去兮不复还。——《战国策·燕策》",
+"士为知己者死，女为悦己者容。——《战国策·赵策》",
+"亡羊而补牢，未为迟也。——《战国策·楚策》",
+"鹬蚌相争，渔人得利。——《战国策·燕策》",
+"前事不忘，后事之师。——《战国策·赵策》",
+"狡兔有三窟，仅得免其死耳。——《战国策·齐策》",
+"狐假虎威。——《战国策·楚策》",
+"画蛇添足。——《战国策·齐策》",
+"三人成虎。——《战国策·魏策》",
+"南辕北辙。——《战国策·魏策》",
+"天道酬勤。——《尚书·周书·大诰》（引申义）",
+"满招损，谦受益。——《尚书·大禹谟》",
+"玩人丧德，玩物丧志。——《尚书·旅獒》",
+"为山九仞，功亏一篑。——《尚书·旅獒》",
+"民为邦本，本固邦宁。——《尚书·五子之歌》",
+"火曰炎上，水曰润下。——《尚书·洪范》",
+"皇天无亲，惟德是辅。——《尚书·蔡仲之命》",
+"树德务滋，除恶务本。——《尚书·泰誓下》",
+"有容，德乃大。——《尚书·君陈》",
+"非知之艰，行之惟艰。——《尚书·说命》",
+"克勤于邦，克俭于家。——《尚书·大禹谟》",
+"正德、利用、厚生、惟和。——《尚书·大禹谟》",
+"人心惟危，道心惟微；惟精惟一，允执厥中。——《尚书·大禹谟》",
+"刑期于无刑。——《尚书·大禹谟》",
+"知人者智，自知者明。——老子《道德经》",
+"胜人者有力，自胜者强。——老子《道德经》",
+"知足者富。——老子《道德经》",
+"强行者有志。——老子《道德经》",
+"不失其所者久。——老子《道德经》",
+"死而不亡者寿。——老子《道德经》",
+"天下万物生于有，有生于无。——老子《道德经》",
+"反者道之动，弱者道之用。——老子《道德经》",
+"大器晚成。——老子《道德经》",
+"大音希声。——老子《道德经》",
+"大象无形。——老子《道德经》",
+"道生一，一生二，二生三，三生万物。——老子《道德经》",
+"知足不辱，知止不殆，可以长久。——老子《道德经》",
+"祸兮福之所倚，福兮祸之所伏。——老子《道德经》",
+"治大国，若烹小鲜。——老子《道德经》",
+"千里之行，始于足下。——老子《道德经》",
+"慎终如始，则无败事。——老子《道德经》",
+"天网恢恢，疏而不失。——老子《道德经》",
+"小国寡民。——老子《道德经》",
+"信言不美，美言不信。——老子《道德经》",
+"善者不辩，辩者不善。——老子《道德经》",
+"知者不博，博者不知。——老子《道德经》",
+"圣人不积，既以为人己愈有，既以与人己愈多。——老子《道德经》",
+"天之道，利而不害；圣人之道，为而不争。——老子《道德经》",
+"穷则独善其身，达则兼济天下。——孟子《孟子·尽心上》",
+"天将降大任于斯人也，必先苦其心志，劳其筋骨。——孟子《孟子·告子下》",
+"生于忧患，死于安乐。——孟子《孟子·告子下》",
+"老吾老，以及人之老；幼吾幼，以及人之幼。——孟子《孟子·梁惠王上》",
+"不以规矩，不能成方圆。——孟子《孟子·离娄上》",
+"得道者多助，失道者寡助。——孟子《孟子·公孙丑下》",
+"富贵不能淫，贫贱不能移，威武不能屈。——孟子《孟子·滕文公下》",
+"虽千万人，吾往矣。——孟子《孟子·公孙丑上》",
+"鱼，我所欲也；熊掌，亦我所欲也。二者不可得兼，舍鱼而取熊掌者也。——孟子《孟子·告子上》",
+"生，亦我所欲也；义，亦我所欲也。二者不可得兼，舍生而取义者也。——孟子《孟子·告子上》",
+"仁者无敌。——孟子《孟子·梁惠王上》",
+"民为贵，社稷次之，君为轻。——孟子《孟子·尽心下》",
+"尽信书，则不如无书。——孟子《孟子·尽心下》",
+"孔子登东山而小鲁，登泰山而小天下。——孟子《孟子·尽心上》",
+"人有不为也，而后可以有为。——孟子《孟子·离娄下》",
+"仰不愧于天，俯不怍于人。——孟子《孟子·尽心上》",
+"贤者以其昭昭使人昭昭，今以其昏昏使人昭昭。——孟子《孟子·尽心下》",
+"爱人者，人恒爱之；敬人者，人恒敬之。——孟子《孟子·离娄下》",
+"吾生也有涯，而知也无涯。——庄子《庄子·养生主》",
+"子非鱼，安知鱼之乐？——庄子《庄子·秋水》",
+"井蛙不可以语于海者，拘于虚也；夏虫不可以语于冰者，笃于时也。——庄子《庄子·秋水》",
+"相濡以沫，不如相忘于江湖。——庄子《庄子·大宗师》",
+"大知闲闲，小知间间；大言炎炎，小言詹詹。——庄子《庄子·齐物论》",
+"天地与我并生，而万物与我为一。——庄子《庄子·齐物论》",
+"彼亦一是非，此亦一是非。——庄子《庄子·齐物论》",
+"方生方死，方死方生。——庄子《庄子·齐物论》",
+"朝菌不知晦朔，蟪蛄不知春秋。——庄子《庄子·逍遥游》",
+"鹏之徙于南冥也，水击三千里，抟扶摇而上者九万里。——庄子《庄子·逍遥游》",
+"且夫水之积也不厚，则其负大舟也无力。——庄子《庄子·逍遥游》",
+"圣人不死，大盗不止。——庄子《庄子·胠箧》",
+"窃钩者诛，窃国者侯。——庄子《庄子·胠箧》",
+"君子之交淡若水，小人之交甘若醴。——庄子《庄子·山木》",
+"人生天地之间，若白驹之过隙，忽然而已。——庄子《庄子·知北游》",
+"哀莫大于心死，而人死亦次之。——庄子《庄子·田子方》",
+"独与天地精神往来。——庄子《庄子·天下》",
+"日中则移，月满则亏。——《战国策·秦策》",
+"不鸣则已，一鸣惊人。——《史记·滑稽列传》",
+"桃李不言，下自成蹊。——《史记·李将军列传》",
+"失之毫厘，谬以千里。——《史记·太史公自序》",
+"燕雀安知鸿鹄之志哉！——《史记·陈涉世家》",
+"王侯将相宁有种乎！——《史记·陈涉世家》",
+"项庄舞剑，意在沛公。——《史记·项羽本纪》",
+"大行不顾细谨，大礼不辞小让。——《史记·项羽本纪》",
+"人为刀俎，我为鱼肉。——《史记·项羽本纪》",
+"富贵不归故乡，如衣绣夜行。——《史记·项羽本纪》",
+"力拔山兮气盖世。——《史记·项羽本纪》",
+"无面目见江东父老。——《史记·项羽本纪》",
+"运筹帷幄之中，决胜千里之外。——《史记·高祖本纪》",
+"忠言逆耳利于行，良药苦口利于病。——《史记·留侯世家》",
+"飞鸟尽，良弓藏；狡兔死，走狗烹。——《史记·越王勾践世家》",
+"人固有一死，或重于泰山，或轻于鸿毛。——司马迁《报任安书》",
+"究天人之际，通古今之变，成一家之言。——司马迁《报任安书》",
+"文王拘而演《周易》；仲尼厄而作《春秋》。——司马迁《报任安书》",
+"屈原放逐，乃赋《离骚》；左丘失明，厥有《国语》。——司马迁《报任安书》",
+"孙子膑脚，《兵法》修列；不韦迁蜀，世传《吕览》。——司马迁《报任安书》",
+"韩非囚秦，《说难》《孤愤》。——司马迁《报任安书》",
+"诗三百篇，大底圣贤发愤之所为作也。——司马迁《报任安书》",
+"士为知己者死。——《史记·刺客列传》",
+"风蕭蕭兮易水寒，壮士一去兮不复还。——《史记·刺客列传》",
+"智者千虑，必有一失；愚者千虑，必有一得。——《史记·淮阴侯列传》",
+"成也萧何，败也萧何。——《史记·淮阴侯列传》（民间总结）",
+"当断不断，反受其乱。——《史记·春申君列传》",
+"不飞则已，一飞冲天；不鸣则已，一鸣惊人。——《史记·滑稽列传》",
+"其身正，不令而行；其身不正，虽令不从。——《论语·子路》",
+"兼听则明，偏信则暗。——《资治通鉴·唐纪》",
+"由俭入奢易，由奢入俭难。——《资治通鉴·宋纪》",
+"知己知彼，百战不殆。——孙武《孙子兵法·谋攻》",
+"攻其不备，出其不意。——孙武《孙子兵法·计篇》",
+"兵者，诡道也。——孙武《孙子兵法·计篇》",
+"不战而屈人之兵，善之善者也。——孙武《孙子兵法·谋攻》",
+"置之死地而后生。——孙武《孙子兵法·九地》",
+"投之亡地然后存。——孙武《孙子兵法·九地》",
+"其疾如风，其徐如林，侵掠如火，不动如山。——孙武《孙子兵法·军争》",
+"三军可夺气，将军可夺心。——孙武《孙子兵法·军争》",
+"用兵之法，十则围之，五则攻之，倍则分之。——孙武《孙子兵法·谋攻》",
+"凡战者，以正合，以奇胜。——孙武《孙子兵法·势篇》",
+"善战者，致人而不致于人。——孙武《孙子兵法·虚实》",
+"避实而击虚。——孙武《孙子兵法·虚实》",
+"千里之堤，溃于蚁穴。——《韩非子·喻老》",
+"以子之矛，攻子之盾。——《韩非子·难一》",
+"守株待兔。——《韩非子·五蠹》",
+"滥竽充数。——《韩非子·内储说上》",
+"老马识途。——《韩非子·说林上》",
+"世异则事异，事异则备变。——《韩非子·五蠹》",
+"法不阿贵，绳不挠曲。——《韩非子·有度》",
+"奉公如法则上下平。——《韩非子·有度》",
+"长袖善舞，多钱善贾。——《韩非子·五蠹》",
+"宰相必起于州部，猛将必发于卒伍。——《韩非子·显学》",
+"路遥知马力，日久见人心。——《元曲选·争报恩》",
+"近水楼台先得月，向阳花木易为春。——苏麟《断句》",
+"有意栽花花不发，无心插柳柳成荫。——《增广贤文》",
+"画虎画皮难画骨，知人知面不知心。——《增广贤文》",
+"人善被人欺，马善被人骑。——《增广贤文》",
+"贫居闹市无人问，富在深山有远亲。——《增广贤文》",
+"谁人背后无人说，哪个人前不说人。——《增广贤文》",
+"长江后浪推前浪，世上新人赶旧人。——《增广贤文》",
+"滚滚长江东逝水，浪花淘尽英雄。——杨慎《临江仙》",
+"是非成败转头空。——杨慎《临江仙》",
+"青山依旧在，几度夕阳红。——杨慎《临江仙》",
+"白发渔樵江渚上，惯看秋月春风。——杨慎《临江仙》",
+"一壶浊酒喜相逢。——杨慎《临江仙》",
+"古今多少事，都付笑谈中。——杨慎《临江仙》",
+"天下兴亡，匹夫有责。——顾炎武《日知录》（概括）",
+"落红不是无情物，化作春泥更护花。——龚自珍《己亥杂诗》",
+"我劝天公重抖擞，不拘一格降人才。——龚自珍《己亥杂诗》",
+"九州生气恃风雷，万马齐喑究可哀。——龚自珍《己亥杂诗》",
+"苟利国家生死以，岂因祸福避趋之。——林则徐《赴戍登程口占示家人》",
+"海纳百川，有容乃大；壁立千仞，无欲则刚。——林则徐《对联》",
+"师夷长技以制夷。——魏源《海国图志》",
+"物竞天择，适者生存。——严复《天演论》",
+"少年智则国智，少年富则国富，少年强则国强。——梁启超《少年中国说》",
+"红军不怕远征难，万水千山只等闲。——毛泽东《七律·长征》",
+"金沙水拍云崖暖，大渡桥横铁索寒。——毛泽东《七律·长征》",
+"更喜岷山千里雪，三军过后尽开颜。——毛泽东《七律·长征》",
+"江山如此多娇，引无数英雄竞折腰。——毛泽东《沁园春·雪》",
+"惜秦皇汉武，略输文采；唐宗宋祖，稍逊风骚。——毛泽东《沁园春·雪》",
+"一代天骄，成吉思汗，只识弯弓射大雕。——毛泽东《沁园春·雪》",
+"俱往矣，数风流人物，还看今朝。——毛泽东《沁园春·雪》",
+"独立寒秋，湘江北去，橘子洲头。——毛泽东《沁园春·长沙》",
+"鹰击长空，鱼翔浅底，万类霜天竞自由。——毛泽东《沁园春·长沙》",
+"怅寥廓，问苍茫大地，谁主沉浮？——毛泽东《沁园春·长沙》",
+"恰同学少年，风华正茂；书生意气，挥斥方遒。——毛泽东《沁园春·长沙》",
+"指点江山，激扬文字，粪土当年万户侯。——毛泽东《沁园春·长沙》",
+"曾记否，到中流击水，浪遏飞舟？——毛泽东《沁园春·长沙》",
+"才饮长沙水，又食武昌鱼。——毛泽东《水调歌头·游泳》",
+"不管风吹浪打，胜似闲庭信步。——毛泽东《水调歌头·游泳》",
+"坐地日行八万里，巡天遥看一千河。——毛泽东《七律二首·送瘟神》",
+"世上无难事，只要肯登攀。——毛泽东《水调歌头·重上井冈山》",
+"待到山花烂漫时，她在丛中笑。——毛泽东《卜算子·咏梅》",
+"踏遍青山人未老，风景这边独好。——毛泽东《清平乐·会昌》",
+"雄关漫道真如铁，而今迈步从头越。——毛泽东《忆秦娥·娄山关》",
+"天若有情天亦老，人间正道是沧桑。——毛泽东《七律·人民解放军占领南京》",
+"宜将剩勇追穷寇，不可沽名学霸王。——毛泽东《七律·人民解放军占领南京》",
+"独有英雄驱虎豹，更无豪杰怕熊罴。——毛泽东《七律·冬云》",
+"梅花欢喜漫天雪，冻死苍蝇未足奇。——毛泽东《七律·冬云》",
+"中华儿女多奇志，不爱红装爱武装。——毛泽东《七绝·为女民兵题照》",
+"可上九天揽月，可下五洋捉鳖，谈笑凯歌还。——毛泽东《水调歌头·重上井冈山》",
+"三十八年过去，弹指一挥间。——毛泽东《水调歌头·重上井冈山》",
+"风雨送春归，飞雪迎春到。——毛泽东《卜算子·咏梅》",
+"已是悬崖百丈冰，犹有花枝俏。——毛泽东《卜算子·咏梅》",
+"俏也不争春，只把春来报。——毛泽东《卜算子·咏梅》",
+"军民团结如一人，试看天下谁能敌。——毛泽东《杂言诗·八连颂》",
+"横眉冷对千夫指，俯首甘为孺子牛。——鲁迅《自嘲》",
+"心事浩茫连广宇，于无声处听惊雷。——鲁迅《无题》",
+"寄意寒星荃不察，我以我血荐轩辕。——鲁迅《自题小像》",
+"度尽劫波兄弟在，相逢一笑泯恩仇。——鲁迅《题三义塔》",
+"岂有豪情似旧时，花开花落两由之。——鲁迅《悼杨铨》",
+"忍看朋辈成新鬼，怒向刀丛觅小诗。——鲁迅《为了忘却的记念》",
+"吟罢低眉无写处，月光如水照缁衣。——鲁迅《无题》",
+"无情未必真豪杰，怜子如何不丈夫。——鲁迅《答客诮》",
+"血沃中原肥劲草，寒凝大地发春华。——鲁迅《无题》",
+"万家墨面没蒿莱，敢有歌吟动地哀。——鲁迅《无题》",
+"不在沉默中爆发，就在沉默中灭亡。——鲁迅《记念刘和珍君》",
+"时间就是性命。无端的空耗别人的时间，其实是无异于谋财害命的。——鲁迅《门外文谈》",
+"做一件事，无论大小，倘无恒心，是很不好的。——鲁迅《致颜黎民》",
+"死者倘不埋在活人心中，那就真的死掉了。——鲁迅《空谈》",
+"真正的勇士，敢于直面惨淡的人生，敢于正视淋漓的鲜血。——鲁迅《记念刘和珍君》",
+"人生得一知己足矣，斯世当以同怀视之。——鲁迅《赠瞿秋白》",
+"此后如竟没有炬火，我便是唯一的光。——鲁迅《热风》",
+"愿中国青年都摆脱冷气，只是向上走，不必听自暴自弃者流的话。——鲁迅《热风》",
+"能做事的做事，能发声的发声。——鲁迅《热风》",
+"有一分热，发一分光。——鲁迅《热风》",
+"就令萤火一般，也可以在黑暗里发一点光，不必等候炬火。——鲁迅《热风》",
+"我们从古以来，就有埋头苦干的人，有拼命硬干的人，有为民请命的人，有舍身求法的人……这就是中国的脊梁。——鲁迅《中国人失掉自信力了吗》",
+"其实地上本没有路，走的人多了，也便成了路。——鲁迅《故乡》",
+"悲剧将人生的有价值的东西毁灭给人看，喜剧将那无价值的撕破给人看。——鲁迅《再论雷峰塔的倒掉》",
+"友谊是两颗心真诚相待，而不是一颗心对另一颗心的敲打。——鲁迅《鲁迅书信集》"];
 
         window.onload = () => {
             document.getElementById('mainText').innerText = `"${quotes[Math.floor(Math.random() * quotes.length)]}"`;
@@ -961,23 +1672,20 @@
             initZoom();
         };
 
-        // --- 画布缩放与平移 (增强版) ---
+        // --- 画布缩放与平移 ---
         function initZoom() {
             const container = document.getElementById('annotationContainer');
             let startDist = 0, startScale = 1;
             let startPanX = 0, startPanY = 0;
             let isPanning = false;
 
-            // PC 滚轮缩放
             container.addEventListener('wheel', (e) => {
                 e.preventDefault();
                 const delta = e.deltaY > 0 ? 0.9 : 1.1;
                 changeZoomInternal(delta);
             });
 
-            // PC 鼠标拖拽平移
             container.addEventListener('mousedown', (e) => {
-                // 如果点击的是交互元素或把手，不平移
                 if (e.target.closest('.interactive-item') || drawingMode) return;
                 isPanning = true;
                 startPanX = e.clientX - stageX;
@@ -1000,7 +1708,6 @@
                 }
             });
 
-            // 移动端触摸逻辑
             container.addEventListener('touchstart', (e) => {
                 if (e.touches.length === 2) {
                     startDist = Math.hypot(
@@ -1056,7 +1763,53 @@
             stage.style.transform = `translate(calc(-50% + ${stageX}px), calc(-50% + ${stageY}px)) scale(${stageScale})`;
         }
 
-        // --- 初始化辅助 ---
+        // --- 粗细调节 & 智能手柄大小 ---
+        function changeStrokeWidth(val) {
+            currentStrokeWidth = parseInt(val);
+            document.getElementById('strokeWidthVal').innerText = val;
+            
+            const selected = document.querySelector('.interactive-item.selected');
+            if(selected) {
+                const rect = selected.querySelector('.shape-rect');
+                if(rect) rect.style.borderWidth = val + 'px';
+                
+                const line = selected.querySelector('.shape-line');
+                if(line) {
+                    line.style.borderBottomWidth = val + 'px';
+                    // 修复：线条的容器高度需要稍微大于线条粗细，以便容纳
+                    // 实际上 line 的容器高度是由 handle 撑开的 min-height
+                }
+            }
+        }
+
+        function updateHandleSize(el) {
+            const w = el.offsetWidth;
+            const h = el.offsetHeight;
+            const minDim = Math.min(w, h);
+            
+            let handleSize = 28;
+            if(minDim < 100) {
+                handleSize = Math.max(12, minDim * 0.28); 
+            }
+            
+            const handles = el.querySelectorAll('.handle');
+            const offset = -(handleSize / 2);
+            
+            handles.forEach(h => {
+                h.style.width = handleSize + 'px';
+                h.style.height = handleSize + 'px';
+                h.style.lineHeight = handleSize + 'px';
+                h.style.fontSize = (handleSize * 0.5) + 'px';
+                
+                if(h.classList.contains('handle-del')) { h.style.top = offset+'px'; h.style.left = offset+'px'; }
+                if(h.classList.contains('handle-copy')) { h.style.top = offset+'px'; h.style.right = offset+'px'; }
+                if(h.classList.contains('handle-resize')) { h.style.bottom = offset+'px'; h.style.right = offset+'px'; }
+                if(h.classList.contains('handle-move')) { h.style.bottom = offset+'px'; h.style.left = offset+'px'; }
+                if(h.classList.contains('handle-rotate')) { h.style.top = (offset - 20) + 'px'; h.style.left = '50%'; h.style.marginLeft = offset+'px';}
+            });
+        }
+
+        // --- 初始化 ---
         function changeQuote() {
             const randomIndex = Math.floor(Math.random() * quotes.length);
             const mainText = document.getElementById('mainText');
@@ -1164,7 +1917,6 @@
             }
         }
 
-        // 创建交互元素工厂 (统一包含5个把手)
         function createItem(contentNode, type='shape') {
             deselectAllItems();
             const el = document.createElement('div');
@@ -1172,13 +1924,18 @@
             el.dataset.type = type; 
             el.style.left = '30%'; el.style.top = '30%';
 
-            // 5个把手
             const delBtn = document.createElement('div');
             delBtn.className = 'handle handle-del'; delBtn.innerText = '✕';
-            
+            delBtn.onclick = (e) => { e.stopPropagation(); el.remove(); if(drawingMode) setDrawingMode(null, null); };
+
             const copyBtn = document.createElement('div');
             copyBtn.className = 'handle handle-copy'; copyBtn.innerText = '❐';
-            
+            copyBtn.onclick = (e) => { 
+                e.stopPropagation(); 
+                duplicateItem(el); 
+                if(drawingMode) setDrawingMode(null, null);
+            };
+
             const resizeBtn = document.createElement('div');
             resizeBtn.className = 'handle handle-resize'; resizeBtn.innerText = '↘';
 
@@ -1188,14 +1945,10 @@
             const moveBtn = document.createElement('div');
             moveBtn.className = 'handle handle-move'; moveBtn.innerText = '✥';
 
-            // 绑定事件 (关键：点击手柄时退出绘图模式)
             [delBtn, copyBtn, resizeBtn, rotateBtn, moveBtn].forEach(btn => {
                 btn.addEventListener('touchstart', (e) => { if(drawingMode) setDrawingMode(null, null); });
                 btn.addEventListener('mousedown', (e) => { if(drawingMode) setDrawingMode(null, null); });
             });
-
-            delBtn.onclick = (e) => { e.stopPropagation(); el.remove(); };
-            copyBtn.onclick = (e) => { e.stopPropagation(); duplicateItem(el); };
 
             el.appendChild(delBtn);
             el.appendChild(copyBtn);
@@ -1211,12 +1964,29 @@
                 if(drawingMode) setDrawingMode(null, null);
                 deselectAllItems();
                 el.classList.add('selected');
+                
+                if(type === 'shape') {
+                     const rect = el.querySelector('.shape-rect');
+                     const line = el.querySelector('.shape-line');
+                     if(rect) {
+                         const w = parseFloat(rect.style.borderWidth) || 4;
+                         document.getElementById('strokeWidthSlider').value = w;
+                         document.getElementById('strokeWidthVal').innerText = w;
+                     }
+                     if(line) {
+                         const w = parseFloat(line.style.borderBottomWidth) || 4;
+                         document.getElementById('strokeWidthSlider').value = w;
+                         document.getElementById('strokeWidthVal').innerText = w;
+                     }
+                }
+                updateHandleSize(el);
             });
             
             el.addEventListener('dblclick', (e) => { e.stopPropagation(); el.remove(); });
 
             document.getElementById('workStage').appendChild(el);
             historyStack.push(el);
+            updateHandleSize(el);
             return el;
         }
 
@@ -1225,25 +1995,25 @@
             clone.style.left = (parseFloat(original.style.left) + 20) + 'px';
             clone.style.top = (parseFloat(original.style.top) + 20) + 'px';
             
-            // 重新绑定事件
             const resizeBtn = clone.querySelector('.handle-resize');
-            const rotateBtn = clone.querySelector('.handle-rotate');
-            const moveBtn = clone.querySelector('.handle-move');
             const delBtn = clone.querySelector('.handle-del');
             const copyBtn = clone.querySelector('.handle-copy');
+            const rotateBtn = clone.querySelector('.handle-rotate');
+            const moveBtn = clone.querySelector('.handle-move');
+            
+            delBtn.onclick = (e) => { e.stopPropagation(); clone.remove(); };
+            copyBtn.onclick = (e) => { e.stopPropagation(); duplicateItem(clone); };
             
             [delBtn, copyBtn, resizeBtn, rotateBtn, moveBtn].forEach(btn => {
                 btn.addEventListener('touchstart', () => { if(drawingMode) setDrawingMode(null, null); });
                 btn.addEventListener('mousedown', () => { if(drawingMode) setDrawingMode(null, null); });
             });
-
-            delBtn.onclick = (e) => { e.stopPropagation(); clone.remove(); };
-            copyBtn.onclick = (e) => { e.stopPropagation(); duplicateItem(clone); };
             
             const input = clone.querySelector('.custom-input-text');
             if(input) {
-                input.onclick = (e) => { e.stopPropagation(); deselectAllItems(); clone.classList.add('selected'); };
+                input.onclick = (e) => { e.stopPropagation(); deselectAllItems(); clone.classList.add('selected'); updateHandleSize(clone); };
                 input.onmousedown = (e) => e.stopPropagation();
+                input.ontouchstart = (e) => e.stopPropagation();
             }
 
             bindInteraction(clone, resizeBtn, rotateBtn, moveBtn);
@@ -1253,12 +2023,14 @@
                 if(drawingMode) setDrawingMode(null, null);
                 deselectAllItems(); 
                 clone.classList.add('selected');
+                updateHandleSize(clone);
             });
             clone.addEventListener('dblclick', (e) => { e.stopPropagation(); clone.remove(); });
 
             document.getElementById('workStage').appendChild(clone);
             historyStack.push(clone);
             deselectAllItems(); clone.classList.add('selected');
+            updateHandleSize(clone);
         }
 
         function addTextSticker() {
@@ -1274,7 +2046,12 @@
             
             input.onmousedown = (e) => e.stopPropagation();
             input.ontouchstart = (e) => e.stopPropagation();
-            input.onclick = (e) => { e.stopPropagation(); deselectAllItems(); input.closest('.interactive-item').classList.add('selected'); };
+            input.onclick = (e) => { 
+                e.stopPropagation(); deselectAllItems(); 
+                const el = input.closest('.interactive-item');
+                el.classList.add('selected'); 
+                updateHandleSize(el);
+            };
             
             content.appendChild(input);
             createItem(content, 'text');
@@ -1288,20 +2065,15 @@
             createItem(content, 'sticker');
         }
 
-        // 交互逻辑 (拖拽 + 缩放 + 旋转)
         function bindInteraction(el, resizeHandle, rotateHandle, moveHandle) {
-            // 拖拽 (元素本身 & 移动抓手)
             const startDrag = (e) => {
                 if(e.target.isContentEditable) return;
-                // 如果点击的是把手（除了移动抓手），不触发拖拽
                 if(e.target.classList.contains('handle') && !e.target.classList.contains('handle-move')) return;
                 
                 e.preventDefault(); e.stopPropagation();
-                
-                // 关键：点击已有元素时，退出绘图模式
                 if(drawingMode) setDrawingMode(null, null);
-
                 deselectAllItems(); el.classList.add('selected');
+                updateHandleSize(el);
 
                 const p = e.touches ? e.touches[0] : e;
                 const startX = p.clientX; const startY = p.clientY;
@@ -1311,7 +2083,6 @@
 
                 const move = (em) => {
                     const pm = em.touches ? em.touches[0] : em;
-                    // 计算逻辑需考虑画布缩放 stageScale
                     el.style.left = (pm.clientX - parentRect.left - offsetX) / stageScale + 'px';
                     el.style.top = (pm.clientY - parentRect.top - offsetY) / stageScale + 'px';
                 };
@@ -1334,94 +2105,106 @@
                 moveHandle.addEventListener('mousedown', startDrag);
             }
 
-            // 缩放
-            const startResize = (e) => {
-                e.preventDefault(); e.stopPropagation();
-                if(drawingMode) setDrawingMode(null, null);
+            if (resizeHandle) {
+                resizeHandle.addEventListener('touchstart', resizeStart);
+                resizeHandle.addEventListener('mousedown', resizeStart);
 
-                const p = e.touches ? e.touches[0] : e;
-                const startX = p.clientX;
-                
-                let content = el.querySelector('.item-content');
-                if(content.firstElementChild) content = content.firstElementChild;
+                function resizeStart(e) {
+                    e.preventDefault(); e.stopPropagation();
+                    if(drawingMode) setDrawingMode(null, null);
 
-                const style = window.getComputedStyle(content);
-                const isText = content.classList.contains('custom-input-text') || content.classList.contains('sticker-text');
-                const startVal = isText ? parseFloat(style.fontSize) : parseFloat(content.style.width || content.offsetWidth);
+                    const p = e.touches ? e.touches[0] : e;
+                    const startX = p.clientX; 
+                    const startY = p.clientY; // Capture Y
+                    
+                    let content = el.querySelector('.item-content');
+                    if(content.firstElementChild) content = content.firstElementChild;
 
-                const rMove = (em) => {
-                    const pm = em.touches ? em.touches[0] : em;
-                    const diff = (pm.clientX - startX) / stageScale;
-                    if(isText) {
-                        let s = startVal + diff/2;
-                        if(s < 12) s = 12;
-                        content.style.fontSize = s + 'px';
-                    } else {
-                        let s = startVal + diff;
-                        if(s < 20) s = 20;
-                        content.style.width = s + 'px';
-                        if (content.className.includes('shape-exp')) {
-                            content.style.height = (s * 0.75) + 'px';
-                        } else if (content.className.includes('shape-line')) {
-                            // 线条高度不变
+                    const style = window.getComputedStyle(content);
+                    const isText = content.classList.contains('custom-input-text') || content.classList.contains('sticker-text');
+                    const startValW = parseFloat(style.width) || 0;
+                    const startValH = parseFloat(style.height) || 0;
+                    const startFontSize = isText ? parseFloat(style.fontSize) : 0;
+
+                    const rMove = (em) => {
+                        const pm = em.touches ? em.touches[0] : em;
+                        const diffX = (pm.clientX - startX) / stageScale;
+                        const diffY = (pm.clientY - startY) / stageScale;
+
+                        if(isText) {
+                            let s = startFontSize + diffX/2;
+                            if(s < 12) s = 12;
+                            content.style.fontSize = s + 'px';
                         } else {
-                            // 矩形等比例
-                            content.style.height = (parseFloat(content.style.height) + diff) + 'px';
-                        }
-                    }
-                };
-                const rUp = () => {
-                    window.removeEventListener('mousemove', rMove);
-                    window.removeEventListener('touchmove', rMove);
-                    window.removeEventListener('mouseup', rUp);
-                    window.removeEventListener('touchend', rUp);
-                };
-                window.addEventListener('mousemove', rMove);
-                window.addEventListener('touchmove', rMove, {passive: false});
-                window.addEventListener('mouseup', rUp);
-                window.addEventListener('touchend', rUp);
-            };
+                            // Independent resizing
+                            let newW = startValW + diffX;
+                            let newH = startValH + diffY;
+                            
+                            // Constraints
+                            if(newW < 20) newW = 20;
+                            if(newH < 20) newH = 20;
 
-            if(resizeHandle) {
-                resizeHandle.addEventListener('touchstart', startResize);
-                resizeHandle.addEventListener('mousedown', startResize);
+                            if (content.className.includes('shape-exp')) {
+                                // Explosion keeps aspect ratio roughly based on X
+                                content.style.width = newW + 'px';
+                                content.style.height = (newW * 0.75) + 'px';
+                            } else if (content.className.includes('shape-line')) {
+                                // Line only changes width
+                                content.style.width = newW + 'px';
+                            } else {
+                                // Rect / FillRect: Free resize
+                                content.style.width = newW + 'px';
+                                content.style.height = newH + 'px';
+                            }
+                        }
+                        updateHandleSize(el);
+                    };
+                    const rUp = () => {
+                        window.removeEventListener('mousemove', rMove);
+                        window.removeEventListener('touchmove', rMove);
+                        window.removeEventListener('mouseup', rUp);
+                        window.removeEventListener('touchend', rUp);
+                    };
+                    window.addEventListener('mousemove', rMove);
+                    window.addEventListener('touchmove', rMove, {passive: false});
+                    window.addEventListener('mouseup', rUp);
+                    window.addEventListener('touchend', rUp);
+                }
             }
 
-            // 旋转
-            const startRotate = (e) => {
-                e.preventDefault(); e.stopPropagation();
-                if(drawingMode) setDrawingMode(null, null);
+            if (rotateHandle) {
+                rotateHandle.addEventListener('touchstart', rotateStart);
+                rotateHandle.addEventListener('mousedown', rotateStart);
 
-                const rect = el.getBoundingClientRect();
-                const center = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+                function rotateStart(e) {
+                    e.preventDefault(); e.stopPropagation();
+                    if(drawingMode) setDrawingMode(null, null);
 
-                const rotMove = (em) => {
-                    const pm = em.touches ? em.touches[0] : em;
-                    const angle = Math.atan2(pm.clientY - center.y, pm.clientX - center.x);
-                    const deg = angle * (180 / Math.PI) + 90;
-                    el.style.transform = `rotate(${deg}deg)`;
-                };
-                const rotUp = () => {
-                    window.removeEventListener('mousemove', rotMove);
-                    window.removeEventListener('touchmove', rotMove);
-                    window.removeEventListener('mouseup', rotUp);
-                    window.removeEventListener('touchend', rotUp);
-                };
-                window.addEventListener('mousemove', rotMove);
-                window.addEventListener('touchmove', rotMove, {passive: false});
-                window.addEventListener('mouseup', rotUp);
-                window.addEventListener('touchend', rotUp);
-            };
+                    const rect = el.getBoundingClientRect();
+                    const center = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
 
-            if(rotateHandle) {
-                rotateHandle.addEventListener('touchstart', startRotate);
-                rotateHandle.addEventListener('mousedown', startRotate);
+                    const rotMove = (em) => {
+                        const pm = em.touches ? em.touches[0] : em;
+                        const angle = Math.atan2(pm.clientY - center.y, pm.clientX - center.x);
+                        const deg = angle * (180 / Math.PI) + 90;
+                        el.style.transform = `rotate(${deg}deg)`;
+                    };
+                    const rotUp = () => {
+                        window.removeEventListener('mousemove', rotMove);
+                        window.removeEventListener('touchmove', rotMove);
+                        window.removeEventListener('mouseup', rotUp);
+                        window.removeEventListener('touchend', rotUp);
+                    };
+                    window.addEventListener('mousemove', rotMove);
+                    window.addEventListener('touchmove', rotMove, {passive: false});
+                    window.addEventListener('mouseup', rotUp);
+                    window.addEventListener('touchend', rotUp);
+                }
             }
         }
 
-        // --- 绘图 (红框/爆炸/色块/线条) ---
+        // --- 绘图 ---
         function setDrawingMode(mode, btn) {
-            // 点击已激活按钮，关闭绘图
             if(drawingMode === mode) {
                 drawingMode = null;
                 document.getElementById('drawOverlay').style.display = 'none';
@@ -1431,14 +2214,12 @@
 
             drawingMode = mode;
             const overlay = document.getElementById('drawOverlay');
-            
             if (mode) {
                 overlay.style.display = 'block';
                 deselectAllItems();
             } else {
                 overlay.style.display = 'none';
             }
-            
             document.querySelectorAll('.flex.gap-2 button').forEach(b => b.classList.remove('tool-active'));
             if(btn && mode) btn.classList.add('tool-active');
         }
@@ -1462,14 +2243,14 @@
             tempDrawingEl.style.top = dStartY + 'px';
             
             if(drawingMode === 'rect') {
-                tempDrawingEl.style.border = `4px solid ${drawingColor}`;
+                tempDrawingEl.style.border = `${currentStrokeWidth}px solid ${drawingColor}`;
                 tempDrawingEl.style.borderRadius = '12px';
             } else if (drawingMode === 'fillRect') {
                 tempDrawingEl.style.backgroundColor = drawingColor;
                 tempDrawingEl.style.borderRadius = '12px';
             } else if (drawingMode === 'line') {
-                tempDrawingEl.style.borderBottom = `6px solid ${drawingColor}`;
-                tempDrawingEl.style.height = '6px';
+                tempDrawingEl.style.borderBottom = `${currentStrokeWidth}px solid ${drawingColor}`;
+                tempDrawingEl.style.height = currentStrokeWidth + 'px';
             } else if (drawingMode === 'explosion') {
                 const encoded = encodeURIComponent(drawingColor);
                 tempDrawingEl.style.backgroundImage = `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 150' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M10,75 L30,60 L20,40 L50,45 L60,20 L80,40 L100,10 L120,40 L140,20 L150,45 L180,40 L170,60 L190,75 L170,90 L180,110 L150,105 L140,130 L120,110 L100,140 L80,110 L60,130 L50,105 L20,110 L30,90 Z' fill='none' stroke='${encoded}' stroke-width='4' stroke-linejoin='round'/%3E%3C/svg%3E")`;
@@ -1488,11 +2269,10 @@
                 
                 if (drawingMode === 'line') {
                     w = Math.abs(currentX - dStartX);
-                    h = 6; 
+                    h = currentStrokeWidth; 
                     x = Math.min(dStartX, currentX);
                     y = dStartY; 
                 } else if(drawingMode === 'explosion') {
-                    // 中心扩散
                     w = Math.abs(currentX - dStartX) * 2;
                     h = Math.abs(currentY - dStartY) * 2;
                     x = dStartX - w/2;
@@ -1542,12 +2322,14 @@
             if (type === 'rect') {
                 shape.className = 'shape-rect';
                 shape.style.borderColor = drawingColor;
+                shape.style.borderWidth = currentStrokeWidth + 'px';
             } else if (type === 'fillRect') {
                 shape.className = 'shape-fill-rect';
                 shape.style.backgroundColor = drawingColor;
             } else if (type === 'line') {
                 shape.className = 'shape-line';
                 shape.style.borderBottomColor = drawingColor;
+                shape.style.borderBottomWidth = currentStrokeWidth + 'px';
             } else {
                 shape.className = 'shape-exp';
                 const encoded = encodeURIComponent(drawingColor);
@@ -1570,7 +2352,7 @@
 
         // --- 合成 ---
         function finishAnnotation() {
-            deselectAllItems(); // 隐藏把手
+            deselectAllItems();
             
             const oldScale = stageScale;
             const oldX = stageX;
